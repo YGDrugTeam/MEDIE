@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "MedicLens",
+    "slug": "MedicLens",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "MedicLens에서 촬영을 위해 카메라 접근이 필요합니다.",
+          "microphonePermission": "영상 녹화를 위해 마이크 접근이 필요합니다.",
+          "recordAudioAndroid": true
+        }
+      ]
+    ],
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.MedicLens"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

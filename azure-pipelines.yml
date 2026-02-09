@@ -1,0 +1,39 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  imageName: mediclens-backend
+  acrName: mediclensacr
+  acrLoginServer: mediclensacr.azurecr.io
+
+stages:
+- stage: Build
+  jobs:
+  - job: BuildAndPush
+    steps:
+    - checkout: self
+
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'ACR_SERVICE_CONNECTION'
+        repository: $(imageName)
+        command: buildAndPush
+        Dockerfile: backend/Dockerfile
+        tags: |
+          $(Build.BuildId)
+
+- stage: Deploy
+  dependsOn: Build
+  jobs:
+  - job: DeployToAKS
+    steps:
+    - task: Kubernetes@1
+      inputs:
+        connectionType: 'Azure Resource Manager'
+        kubernetesServiceEndpoint: 'AKS_SERVICE_CONNECTION'
+        command: apply
+        useConfigurationFile: true
+        configuration: k8s/
