@@ -1,0 +1,19 @@
+https://chatgpt.com/c/698975ec-db20-83ab-8282-090a178f5a16
+
+ACR 접근 권한 확인
+
+
+aks 클러스터 생성 코드 
+az aks create --resource-group mediclens-rg --name mediclens-aks --node-count 2 --enable-addons monitoring --generate-ssh-keys
+
+AKS가 ACR 이미지를 Pull할 수 있도록 권한 부여
+az aks update -n my-aks -g my-rg --attach-acr myacr
+az aks update -n mediclens-aks -g mediclens-rg --attach-acr mediclensacr
+
+
+
+aks 클러스터에 pull 권한 수동 부여 코드 
+az role assignment create \
+  --assignee 8e6456bd-9917-4596-94f9-f011a63cb029 \
+  --role "AcrPull" \
+  --scope /subscriptions/b5a82513-0077-4885-a2d3-6aa00c3cac5b/resourceGroups/mediclens-rg/providers/Microsoft.ContainerRegistry/registries/mediclensacr
