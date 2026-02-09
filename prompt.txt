@@ -1,0 +1,10 @@
+docker build -t mediclens-backend:local .
+docker run -p 8000:8000 mediclens-backend:local
+
+✅ 빌드 & 실행 방법
+🔹 ML 포함 (현재 너 상황)
+docker build -t mediclens-backend:ml .
+docker run -p 8000:8000 mediclens-backend:ml
+
+🔹 ML 없는 API-only (나중에)
+docker build --target base -t mediclens-backend:api .

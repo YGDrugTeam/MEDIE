@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mediclens-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mediclens-backend
+  template:
+    metadata:
+      labels:
+        app: mediclens-backend
+    spec:
+      containers:
+      - name: backend
+        image: mediclensacr.azurecr.io/mediclens-backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENV
+          value: "prod"
+        - name: GROK_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: mediclens-secrets
+              key: GROK_API_KEY

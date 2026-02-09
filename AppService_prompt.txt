@@ -1,0 +1,69 @@
+
+azure 로그인
+az login
+
+azure 그룹생성
+az group create --name mediclens-rg --location koreacentral
+
+ACR (Azure Container Registry) 만들기
+az acr create `
+  --resource-group mediclens-rg `
+  --name mediclensacr `
+  --sku Basic `
+  --admin-enabled true
+  ##만들고서 loginServer 복사하기 
+  "mediclensacr.azurecr.io"
+
+
+acr 로그인
+  az acr login --name mediclensacr
+
+
+docker build -t mediclensacr.azurecr.io/mediclens-backend:latest .
+
+acr 로 푸시
+docker tag mediclens-backend:latest mediclensacr.azurecr.io/mediclens-backend:latest
+docker push mediclensacr.azurecr.io/mediclens-backend:latest
+
+4-1️⃣ App Service Plan 만들기 (Linux)
+az appservice plan create `
+  --name mediclens-plan `
+  --resource-group mediclens-rg `
+  --sku B1 `
+  --is-linux
+
+
+4-2️⃣ App Service(Web App) 생성 (Docker 이미지 연결)
+az webapp create `
+  --resource-group mediclens-rg `
+  --plan mediclens-plan `
+  --name mediclens-backend `
+  --deployment-container-image-name mediclensacr.azurecr.io/mediclens-backend:latest
+
+  4-3️⃣ App Service ↔ ACR 인증 연결 (중요🔥)
+  az webapp config container set `
+  --name mediclens-backend `
+  --resource-group mediclens-rg `
+  --docker-custom-image-name mediclensacr.azurecr.io/mediclens-backend:latest `
+  --docker-registry-server-url https://mediclensacr.azurecr.io `
+  --docker-registry-server-user $(az acr credential show -n mediclensacr --query username -o tsv) `
+  --docker-registry-server-password $(az acr credential show -n mediclensacr --query passwords[0].value -o tsv)
+
+
+
+4-4️⃣ 포트 설정 (FastAPI / Uvicorn 필수)
+
+네 서버는 8000번 포트 쓰고 있으니까
+  az webapp config appsettings set `
+  --name mediclens-backend `
+  --resource-group mediclens-rg `
+  --settings WEBSITES_PORT=8000
+
+
+4-5️⃣ 서버 재시작
+  az webapp restart `
+  --name mediclens-backend `
+  --resource-group mediclens-rg
+
+
+

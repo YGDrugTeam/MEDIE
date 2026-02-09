@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mediclens-backend-svc
+spec:
+  type: LoadBalancer
+  selector:
+    app: mediclens-backend
+  ports:
+  - port: 80
+    targetPort: 8000
