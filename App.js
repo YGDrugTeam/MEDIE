@@ -9,8 +9,8 @@ import { Audio } from 'expo-av';
 
 const { width, height } = Dimensions.get('window');
 const SCAN_GUIDE_SIZE = width * 0.75;
-const API_URL = "https://mediclens-backend.azurewebsites.net/analyze";
-// const API_URL = "https://mediclens-backend.azurewebsites.net/pill/analyze";
+// const API_URL = "https://mediclens-backend.azurewebsites.net/analyze";
+const API_URL = "https://mediclens-backend.azurewebsites.net/pill/analyze";
 
 
 // 🎨 캐릭터 이미지
@@ -73,7 +73,7 @@ export default function App() {
 
   // ... (위 import, state, UI 코드는 전부 동일)
 
-const API_URL = "https://mediclens-backend.azurewebsites.net/analyze-pill";
+const API_URL = "https://mediclens-backend.azurewebsites.net/pill/analyze";
 
 const handleScan = async () => {
   if (!cameraRef.current) return;
@@ -127,8 +127,16 @@ const handleScan = async () => {
     }
 
     // ✅ 성공
+    const pillName = data.analysis?.pill_name;
+    const usage = data.analysis?.usage;
+    const warning = data.analysis?.warning;
+    const appearance = data.analysis?.appearance;
+
     setAiResponse(
-      `알약 ID: ${data.pill_id}\n신뢰도: ${(data.confidence * 100).toFixed(1)}%`
+      `알약 이름: ${pillName}\n` +
+      `신뢰도: ${(data.confidence * 100).toFixed(1)}%\n\n` +
+      `📌 복용 목적\n${usage}\n\n` +
+      `⚠️ 주의사항\n${warning}`
     );
     setShowResult(true);
 

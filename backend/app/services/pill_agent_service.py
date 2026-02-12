@@ -1,8 +1,9 @@
+# app/services/pill_agent_service.py
 from app.services.custom_vision_service import predict_image
 from app.services.gpt_service import generate_pill_info_from_tag
 
 
-async def analyze_pill(file):
+async def analyze_pill_agent(file):
     print("\n[PillAgent] analyze_pill 시작")
 
     vision_result = await predict_image(file)

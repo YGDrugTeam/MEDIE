@@ -4,6 +4,7 @@ pandas
 httpx
 numpy==1.26.4
 pillow
+openai>=1.0.0
 
 python-multipart
 pydantic

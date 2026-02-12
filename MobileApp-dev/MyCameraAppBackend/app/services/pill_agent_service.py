@@ -35,7 +35,7 @@ async def analyze_pill(file):
         }
 
     # ✅ GPT 호출 (완전 위임)
-    analysis = generate_pill_info_from_tag(top["tagName"])
+    analysis = await generate_pill_info_from_tag(top["tagName"])
 
     result = {
         "success": True,

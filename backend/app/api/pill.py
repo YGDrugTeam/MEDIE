@@ -1,27 +1,17 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from app.services.custom_vision_service import predict_image
+from app.services.pill_agent_service import analyze_pill_agent
 
-router = APIRouter()
+router = APIRouter(prefix="/pill", tags=["pill"])
 
 
 @router.post("/analyze")
 async def analyze_pill(file: UploadFile = File(...)):
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능")
+    result = await analyze_pill_agent(file)
 
-    # ✅ predict_image는 UploadFile을 받도록 만들어졌음
-    result = await predict_image(file)
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["message"])
 
-    # 🔍 로그 찍어서 구조 확인
-    print("Custom Vision raw result:", result)
-
-    top = result["predictions"][0]
-
-    return {
-        "status": "success",
-        "pill_tag": top["tagName"],
-        "confidence": float(top["probability"]),
-    }
+    return result
 
 
 # from fastapi import APIRouter, UploadFile, File, HTTPException
