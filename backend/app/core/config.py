@@ -1,6 +1,17 @@
 from pathlib import Path
 from typing import ClassVar
 from pydantic_settings import BaseSettings
+import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+DRUG_API_KEY = os.getenv("DRUG_API_KEY")
+DRUG_API_ENDPOINT = os.getenv("DRUG_API_ENDPOINT")
+
+print(DRUG_API_ENDPOINT)
+print(DRUG_API_KEY[:10])
 
 
 class Settings(BaseSettings):

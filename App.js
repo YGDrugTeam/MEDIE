@@ -6,6 +6,8 @@ import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
 import * as Location from 'expo-location';
 import { Audio } from 'expo-av';
+import { BackHandler, ToastAndroid, Platform } from 'react-native';
+import axios from 'axios';
 
 const { width, height } = Dimensions.get('window');
 const SCAN_GUIDE_SIZE = width * 0.75;
@@ -39,6 +41,71 @@ export default function App() {
       ])
     ).start();
   }, []);
+
+
+  // 📱 시작 화면 뒤로가기 버튼 막기----------------------------------------------------------------
+  const backPressTime = useRef(0);
+
+useEffect(() => {
+  const onBackPress = () => {
+    const now = Date.now();
+
+    // 1️⃣ 결과 모달이 열려 있으면 → 모달만 닫기
+    if (showResult) {
+      setShowResult(false);
+      Speech.stop();
+      return true;
+    }
+
+    // 2️⃣ 스캔 화면이면 → HOME으로
+    if (appMode === 'SCAN') {
+      setAppMode('HOME');
+      return true;
+    }
+
+    // 3️⃣ 서브 화면이면 → HOME으로
+    if (['MAP', 'ALARM', 'FAMILY'].includes(appMode)) {
+      setAppMode('HOME');
+      return true;
+    }
+
+    // 4️⃣ HOME에서 뒤로가기 → 2번 눌러 종료
+    if (appMode === 'HOME') {
+      if (now - backPressTime.current < 2000) {
+        BackHandler.exitApp(); // ✅ 앱 종료
+        return true;
+      }
+
+      backPressTime.current = now;
+
+
+
+      // ✅ Android에서만 Toast 사용
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(
+        '한 번 더 누르면 앱이 종료됩니다',
+        ToastAndroid.SHORT
+      );
+    }
+
+
+
+      return true;
+    }
+
+    return false;
+  };
+
+  const backHandler = BackHandler.addEventListener(
+    'hardwareBackPress',
+    onBackPress
+  );
+
+  return () => backHandler.remove();
+}, [showResult, appMode]);
+  
+  
+// ----------------------------------------------------------------------------------------------------
 
   const playStartSound = async () => {
     try {
@@ -169,6 +236,19 @@ const handleScan = async () => {
     </View>
   );
 
+  const handleRegisterPill = () => {
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+  Alert.alert(
+    "등록 완료",
+    "내 복용약으로 등록되었습니다.",
+    [{ text: "확인", onPress: () => setShowResult(false) }]
+  );
+
+  // TODO (다음 단계)
+  // 서버에 복용약 저장 API 호출
+};
+
   // 📱 시작 화면
   if (!isStarted) {
     return (
@@ -273,7 +353,13 @@ const handleScan = async () => {
         </View>
         
         {/* 📊 결과 모달 */}
-        <Modal visible={showResult} animationType="slide" transparent>
+        <Modal visible={showResult} animationType="slide" transparent
+          onRequestClose={() => {
+          setShowResult(false);
+          Speech.stop();
+          return true;
+          }}
+          >
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>💊 AI 분석 결과</Text>
@@ -291,16 +377,32 @@ const handleScan = async () => {
                 <Text style={styles.resultBody}>{aiResponse}</Text>
               </ScrollView>
               
-              <TouchableOpacity 
-                style={styles.modalCloseBtn} 
-                onPress={() => {
-                  setShowResult(false); 
-                  setDrugImageUrl(null);
-                  Speech.stop();
-                }}
-              >
-                <Text style={styles.modalCloseBtnText}>확인</Text>
-              </TouchableOpacity>
+                <View style={styles.modalButtonRow}>
+
+                {/* 왼쪽 버튼 */}
+                <TouchableOpacity
+                  style={[styles.modalActionBtn, styles.secondaryBtn]}
+                  onPress={() => {
+                    Alert.alert("알림", "복용 알약으로 등록되었습니다");
+                  }}
+                >
+                  <Text style={styles.secondaryBtnText}>복용 알약 등록</Text>
+                </TouchableOpacity>
+
+                {/* 오른쪽 버튼 */}
+                <TouchableOpacity
+                  style={[styles.modalActionBtn, styles.primaryBtn]}
+                  onPress={() => {
+                    setShowResult(false);
+                    Speech.stop();
+                  }}
+                >
+                  <Text style={styles.primaryBtnText}>확인</Text>
+                </TouchableOpacity>
+
+                </View>
+
+
             </View>
           </View>
         </Modal>
@@ -401,6 +503,31 @@ const handleScan = async () => {
 
   return null;
 }
+
+// ----------------------------------------------------------------------------------------------------
+
+
+/**
+ * 식약처 e-약은요 API 검색
+ * @param {string} itemName - 약 이름
+ * @returns {Promise<Object>} 검색 결과
+ */
+async function searchDrug(itemName) {
+  const res = await fetch(
+    `https://mediclens-backend.azurewebsites.net/drugs/search?itemName=${encodeURIComponent(itemName)}`
+  );
+  return res.json();
+}
+
+
+
+// -----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
@@ -538,4 +665,41 @@ const styles = StyleSheet.create({
     borderRadius: 15 
   },
   modalCloseBtnText: { fontWeight: 'bold', color: '#fff', fontSize: 16 }
+  // 
+  ,
+  modalButtonRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  marginTop: 15,
+},
+
+modalActionBtn: {
+  flex: 1,
+  paddingVertical: 15,
+  borderRadius: 15,
+  alignItems: 'center',
+},
+
+secondaryBtn: {
+  backgroundColor: '#F3E5F5',
+  marginRight: 10,
+},
+
+primaryBtn: {
+  backgroundColor: '#FF7F50',
+  marginLeft: 10,
+},
+
+secondaryBtnText: {
+  color: '#FF7F50',
+  fontWeight: 'bold',
+  fontSize: 15,
+},
+
+primaryBtnText: {
+  color: '#fff',
+  fontWeight: 'bold',
+  fontSize: 15,
+},
+  
 });

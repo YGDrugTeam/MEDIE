@@ -6,6 +6,8 @@ import logging
 
 from app.api import pill
 from app.models.pill_predictor import load_model
+from app.api import drug
+from app.api import analyze
 
 app = FastAPI(title="MedicLens API", version="2.0")
 
@@ -33,3 +35,5 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 app.include_router(pill.router)
+app.include_router(drug.router)
+app.include_router(analyze.router)

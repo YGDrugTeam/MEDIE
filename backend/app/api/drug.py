@@ -1,15 +1,14 @@
 from fastapi import APIRouter, HTTPException
-from app.schemas.drug_schema import DrugInfoRequest
-from app.services.drug_api_service import get_drug_detail_info
+from app.services.drug_service import fetch_drug_info
 
-router = APIRouter(prefix="/drug-info", tags=["Drug"])
+router = APIRouter(prefix="/drugs", tags=["Drug"])
 
 
-@router.post("")
-async def get_drug_info(request: DrugInfoRequest):
-    result = await get_drug_detail_info(request.itemSeq)
+@router.get("/search")
+def search_drug(name: str):
+    result = fetch_drug_info(name)
 
-    if "error" in result:
-        raise HTTPException(status_code=404, detail=result["error"])
+    if not result:
+        raise HTTPException(status_code=404, detail="약 정보를 찾을 수 없습니다")
 
-    return result
+    return {"count": len(result), "items": result}
