@@ -1,0 +1,121 @@
+🚀 Expo 최신 방식으로 APK 만들기 (EAS Build)
+1️⃣ EAS CLI 설치
+
+한 번만 하면 됨
+
+npm install -g eas-cli
+
+
+설치 확인:
+
+eas --version
+
+2️⃣ Expo 로그인
+npx expo login
+
+3️⃣ EAS 초기 설정
+
+프로젝트 루트에서 👇
+
+eas init
+
+질문 나오면 이렇게 선택 👇
+
+Would you like to create an EAS project?
+→ Yes
+
+Which account?
+→ 본인 계정 선택
+
+Generate eas.json?
+→ Yes
+
+4️⃣ APK 빌드 실행 (⭐ 핵심)
+eas build -p android --profile preview
+
+
+📌 이 명령의 의미
+
+-p android → 안드로이드
+
+preview → APK 파일 생성
+
+(production은 AAB임 ❌)
+
+5️⃣ 처음 빌드 시 꼭 나오는 질문 (중요)
+✔ Generate a new Android Keystore?
+
+
+👉 무조건 YES
+
+Yes (recommended)
+
+
+📌 이거 안 하면:
+
+나중에 업데이트 불가
+
+스토어 배포 불가
+
+6️⃣ 빌드 진행
+
+로컬 PC에서 빌드 ❌
+
+Expo 서버에서 클라우드 빌드
+
+5~15분 소요
+
+중간에 이런 링크 나옴:
+
+https://expo.dev/accounts/xxxx/projects/xxxx/builds/xxxx
+
+
+👉 웹에서도 진행상황 확인 가능
+
+7️⃣ APK 다운로드
+
+빌드 완료되면:
+
+Download APK 버튼
+
+.apk 파일 받기
+
+📱 폰에 옮겨서 바로 설치 가능
+
+❗ 90%가 여기서 막히는 체크포인트
+✅ 1. API 주소
+
+APK에서는 이거 절대 안 됨
+
+http://localhost:8000 ❌
+
+
+👉 반드시:
+
+https://서버도메인.com ✅
+
+✅ 2. 위치 권한 (이미 잘했을 가능성 큼)
+
+app.json 또는 app.config.js
+
+{
+  "expo": {
+    "android": {
+      "permissions": ["ACCESS_FINE_LOCATION"]
+    }
+  }
+}
+
+✅ 3. 카카오맵 / 외부 SDK
+
+APK 빌드에서 문제 없음
+
+다만 릴리즈 모드라 콘솔 로그 안 보임
+
+🔥 지금 네 상황 요약
+항목	상태
+에러	❌ 문제 아님
+원인	build 명령어 폐기
+해결	eas build
+APK 생성	✅ 가능
+배포 단계	🔥 진입

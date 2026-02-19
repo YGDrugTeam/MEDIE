@@ -23,7 +23,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "NSLocationWhenInUseUsageDescription": "내 주변 당번약국을 찾기 위해 위치를 사용합니다."
     },
     "android": {
       "adaptiveIcon": {
@@ -31,7 +32,9 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.MedicLens"
+      "package": "com.anonymous.MedicLens",
+      "permissions": ["ACCESS_FINE_LOCATION"],
+      "locationPermission": "주변 약국 검색을 위해 위치 정보를 사용합니다."
     },
     "web": {
       "favicon": "./assets/favicon.png"

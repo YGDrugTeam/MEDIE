@@ -105,8 +105,13 @@ useEffect(() => {
 }, [showResult, appMode]);
   
   
+  
+// 여기는 당번약국 파트----------------------------------------------------------------
 // ----------------------------------------------------------------------------------------------------
 
+  const PHARM_API_URL =
+  "https://mediclens-backend.azurewebsites.net/pharmacies/duty";
+  
   const playStartSound = async () => {
     try {
       const { sound } = await Audio.Sound.createAsync({ uri: 'https://www.soundjay.com/buttons/sounds/button-30.mp3' });
@@ -114,29 +119,108 @@ useEffect(() => {
     } catch (e) { console.log(e); }
   };
 
-  const openGoogleMaps = (name, address) => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + " " + address)}`;
-    Linking.openURL(url).catch(() => Alert.alert("오류", "구글맵을 열 수 없습니다."));
-  };
+  const openKakaoMapDetail = (p) => {
+  const query = encodeURIComponent(`${p.name}`);
+  const url = `https://map.kakao.com/link/search/${query}`;
+  Linking.openURL(url);
+};
+
 
   const makePhoneCall = (phoneNumber) => {
     const url = `tel:${phoneNumber}`;
     Linking.openURL(url).catch(() => Alert.alert("오류", "전화 연결 실패"));
   };
 
-  const findNearbyPharmacies = async () => {
-    setIsSearchingMap(true);
-    try {
-      await Location.requestForegroundPermissionsAsync();
-      setTimeout(() => {
-        setNearbyPharmacies([
-          { id: 1, name: "중앙 24시 약국", dist: "350m", status: "영업중", phone: "02-123-4567", address: "서울특별시 종로구 세종대로 209" },
-          { id: 2, name: "행복한 밤샘 약국", dist: "820m", status: "영업중", phone: "02-987-6543", address: "서울특별시 중구 세종대로 110" },
-        ]);
-        setIsSearchingMap(false);
-      }, 1000);
-    } catch (e) { setIsSearchingMap(false); }
-  };
+
+
+
+ const findNearbyPharmacies = async () => {
+  setIsSearchingMap(true);
+
+  try {
+    // 1️⃣ 위치 권한
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert("위치 권한 필요", "위치 권한을 허용해주세요");
+      return;
+    }
+
+    // 2️⃣ 현재 위치
+    const location = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.High,
+    });
+
+    const { latitude, longitude } = location.coords;
+
+    // 🔥 3️⃣ reverse geocoding (핵심)
+    const geo = await Location.reverseGeocodeAsync({
+      latitude,
+      longitude,
+    });
+
+    if (!geo || geo.length === 0) {
+      Alert.alert("오류", "주소 정보를 가져올 수 없습니다");
+      return;
+    }
+
+    const sido = geo[0].region;      // 서울특별시
+    const sigungu = geo[0].district; // 관악구
+
+    console.log("📍 위치 확인", {
+      latitude,
+      longitude,
+      sido,
+      sigungu,
+    });
+
+    // 4️⃣ 백엔드 호출
+    const res = await axios.get(PHARM_API_URL, {
+      params: {
+        sido,
+        sigungu,
+        lat: latitude,
+        lng: longitude,
+      },
+    });
+
+    const items = res.data?.data ?? [];
+
+    if (items.length === 0) {
+      setNearbyPharmacies([]);
+      return;
+    }
+
+    const pharmacies = items.map((p, idx) => ({
+      id: idx,
+      name: p.dutyName,
+      dist: `${Math.round(p.distance)}m`,
+      status: "영업중",
+      phone: p.dutyTel1,
+      address: p.dutyAddr,
+      lat: p.wgs84Lat,
+      lng: p.wgs84Lon,
+    }
+    
+  )
+  
+);
+    // console.log('전달할 약국명:', p);
+
+    setNearbyPharmacies(pharmacies);
+
+  } catch (e) {
+    console.error("약국 조회 실패", e);
+    Alert.alert("오류", "당번약국 정보를 불러오지 못했습니다");
+  } finally {
+    setIsSearchingMap(false);
+  }
+};
+  
+
+
+  
+
+
 
   // ... (위 import, state, UI 코드는 전부 동일)
 
@@ -193,19 +277,43 @@ const handleScan = async () => {
       return;
     }
 
-    // ✅ 성공
-    const pillName = data.analysis?.pill_name;
-    const usage = data.analysis?.usage;
-    const warning = data.analysis?.warning;
-    const appearance = data.analysis?.appearance;
+    // 🔐 안전 검증
+const analysis = data.analysis;
+const confidence = data.confidence;
 
-    setAiResponse(
-      `알약 이름: ${pillName}\n` +
-      `신뢰도: ${(data.confidence * 100).toFixed(1)}%\n\n` +
-      `📌 복용 목적\n${usage}\n\n` +
-      `⚠️ 주의사항\n${warning}`
-    );
-    setShowResult(true);
+// ❌ 알약 인식 실패 조건
+if (
+  !analysis ||
+  !analysis.pill_name ||
+  !analysis.usage ||
+  !analysis.warning ||
+  typeof confidence !== 'number' ||
+  isNaN(confidence)
+) {
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+  Alert.alert(
+    "⚠️ 알약 인식 실패",
+    "알약을 인식하지 못했습니다.\n밝은 곳에서 약만 다시 촬영해주세요.",
+    [{ text: "확인" }]
+  );
+
+  return; // 🔥 여기서 종료 (모달 안 뜸)
+}
+
+// ✅ 정상 데이터만 여기 도달
+const pillName = analysis.pill_name;
+const usage = analysis.usage;
+const warning = analysis.warning;
+
+setAiResponse(
+  `💊 알약 이름: ${pillName}\n` +
+  `신뢰도: ${(confidence * 100).toFixed(1)}%\n\n` +
+  `📌 복용 목적\n${usage}\n\n` +
+  `⚠️ 주의사항\n${warning}`
+);
+
+setShowResult(true);
 
     // 🔊 음성 안내
     Speech.speak("알약 분석이 완료되었습니다", {
@@ -411,38 +519,61 @@ const handleScan = async () => {
   }
 
   // 📍 당번 약국
-  if (appMode === 'MAP') {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.subContainer}>
-          <Text style={styles.mapHeader}>📍 내 주변 당번 약국</Text>
-          {isSearchingMap ? (
-            <ActivityIndicator size="large" color="#FF7F50" />
-          ) : (
-            <ScrollView style={styles.listScroll}>
-              {nearbyPharmacies.map(p => (
-                <View key={p.id} style={styles.dataCard}>
-                  <View>
-                    <Text style={styles.cardTitle}>{p.name}</Text>
-                    <Text style={styles.cardSub}>{p.dist} | {p.status}</Text>
-                  </View>
-                  <View style={styles.cardActions}>
-                    <TouchableOpacity onPress={() => makePhoneCall(p.phone)}>
-                      <Text style={styles.actionIcon}>📞</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => openGoogleMaps(p.name, p.address)}>
-                      <Text style={styles.actionIcon}>🗺️</Text>
-                    </TouchableOpacity>
-                  </View>
+if (appMode === 'MAP') {
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.subContainer}>
+        <Text style={styles.mapHeader}>📍 내 주변 당번 약국</Text>
+
+        {isSearchingMap ? (
+          // 🔄 로딩 중
+          <ActivityIndicator size="large" color="#FF7F50" />
+        ) : nearbyPharmacies.length === 0 ? (
+          // 🚨 영업중 약국 없음
+          <Text
+            style={{
+              textAlign: 'center',
+              color: '#999',
+              marginTop: 40,
+              fontSize: 14,
+              lineHeight: 22,
+            }}
+          >
+            현재 시간 기준으로{'\n'}
+            영업 중인 당번약국이 없습니다.
+          </Text>
+        ) : (
+          // ✅ 영업중 약국 리스트
+          <ScrollView style={styles.listScroll}>
+            {nearbyPharmacies.map(p => (
+              <View key={p.id} style={styles.dataCard}>
+                <View>
+                  <Text style={styles.cardTitle}>{p.name}</Text>
+                  <Text style={styles.cardSub}>
+                    {p.dist} | {p.status}
+                  </Text>
                 </View>
-              ))}
-            </ScrollView>
-          )}
-          <BackToMenuBtn />
-        </View>
-      </SafeAreaView>
-    );
-  }
+                <View style={styles.cardActions}>
+                  
+                  <TouchableOpacity onPress={() => makePhoneCall(p.phone)}>
+                    <Text style={styles.actionIcon}>📞</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={() => openKakaoMapDetail(p)}>
+                    <Text style={styles.actionIcon}>🗺️</Text>
+                  </TouchableOpacity>
+
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        )}
+
+        <BackToMenuBtn />
+      </View>
+    </SafeAreaView>
+  );
+}
 
   // ⏰ 복약 알람
   if (appMode === 'ALARM') {

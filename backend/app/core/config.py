@@ -9,6 +9,7 @@ load_dotenv()
 
 DRUG_API_KEY = os.getenv("DRUG_API_KEY")
 DRUG_API_ENDPOINT = os.getenv("DRUG_API_ENDPOINT")
+DUTY_PHARM_API_KEY = os.getenv("DUTY_PHARM_API_KEY")
 
 print(DRUG_API_ENDPOINT)
 print(DRUG_API_KEY[:10])

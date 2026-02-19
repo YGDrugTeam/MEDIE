@@ -16,7 +16,7 @@ az acr create `
 
 
 acr 로그인
-  az acr login --name mediclensacr
+az acr login --name mediclensacr
 
 
 docker build -t mediclensacr.azurecr.io/mediclens-backend:latest .
