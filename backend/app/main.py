@@ -9,7 +9,8 @@ from app.models.pill_predictor import load_model
 from app.api import drug
 from app.api import analyze
 from app.api import pharmacy
-from routers import device, pills
+from app.routers import device, pills, pill_history
+from app.core.database import Base, engine
 
 app = FastAPI(title="MedicLens API", version="2.0")
 
@@ -20,6 +21,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 🔥 테이블 자동 생성
+Base.metadata.create_all(bind=engine)
 
 
 @app.on_event("startup")
@@ -42,3 +46,4 @@ app.include_router(analyze.router)
 app.include_router(pharmacy.router)
 app.include_router(device.router)
 app.include_router(pills.router)
+app.include_router(pill_history.router)

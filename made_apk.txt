@@ -34,6 +34,60 @@ Generate eas.json?
 eas build -p android --profile preview
 
 
+1️⃣ npm 캐시 주기적으로 삭제
+npm cache clean --force
+2️⃣ Expo 캐시 삭제
+C:\Users\UserK\AppData\Local\Temp
+여기 expo / eas 관련 폴더 삭제
+
+
+
+로컬로 다운받는법 
+
+######################################이걸로 하면됨
+.\gradlew.bat assembleRelease
+
+wsl로 키기
+cd ~/projects/LastMobileApp
+cursor .
+
+eas build -p android --profile preview --local
+우분투 설치
+wsl --install -d Ubuntu
+
+우분투 접속 명령어 
+wsl -d Ubuntu
+cd /mnt/c/YG_Project/LastMobileApp
+
+# node 설치 (nvm 추천)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+source ~/.bashrc
+nvm install 20
+nvm use 20
+
+npm i -g eas-cli
+
+# 프로젝트 폴더로 이동 (C:를 /mnt/c로 접근)
+cd /mnt/c/YG_Project/LastMobileApp
+
+npm install
+eas build -p android --profile preview --local
+
+
+
+eas build -p android --profile preview --local
+eas build -p android --clear-cache
+
+.\adb logcat -c
+.\adb kill-server
+.\adb start-server
+.\adb devices
+
+.\adb shell am force-stop com.anonymous.MedicLens
+
+.\adb shell pidof com.anonymous.MedicLens
+
+.\adb logcat --pid=12834
 📌 이 명령의 의미
 
 -p android → 안드로이드

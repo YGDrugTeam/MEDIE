@@ -151,7 +151,7 @@ def fetch_duty_pharmacies(
         distance = calculate_distance(user_lat, user_lng, lat, lng)
 
         # 🚫 1km 초과 제거
-        if distance > 500:
+        if distance > 1000:
             continue
 
         p["distance"] = distance
