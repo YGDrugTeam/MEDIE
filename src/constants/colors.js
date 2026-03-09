@@ -1,0 +1,21 @@
+// constants/colors.js
+
+export const COLORS = {
+  PRIMARY: '#FF7F50',
+  PRIMARY_DARK: '#FF4500',
+
+  BACKGROUND: '#F3E5F5',
+  BACKGROUND_LIGHT: '#E8EAF6',
+
+  TEXT_MAIN: '#333',
+  TEXT_SUB: '#666',
+  TEXT_MUTED: '#888',
+
+  WHITE: '#FFFFFF',
+  BLACK: '#000000',
+
+  SUCCESS: '#4CAF50',
+  WARNING: '#D32F2F',
+
+  BORDER: '#BDBDBD',
+};

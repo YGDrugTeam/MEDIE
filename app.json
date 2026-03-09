@@ -26,7 +26,9 @@
     },
     "ios": {
       "supportsTablet": true,
-      "NSLocationWhenInUseUsageDescription": "내 주변 당번약국을 찾기 위해 위치를 사용합니다."
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "내 주변 당번약국을 찾기 위해 위치를 사용합니다."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -39,8 +41,7 @@
         "ACCESS_FINE_LOCATION",
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
-      ],
-      "locationPermission": "주변 약국 검색을 위해 위치 정보를 사용합니다."
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from app.services.custom_vision_service import predict_image
+from services.custom_vision_service import predict_image
 
 router = APIRouter()
 

@@ -1,5 +1,5 @@
-from app.services.custom_vision_service import predict_image
-from app.services.gpt_service import generate_pill_info_from_tag
+from services.custom_vision_service import predict_image
+from services.gpt_service import generate_pill_info_from_tag
 
 
 async def analyze_pill(file):

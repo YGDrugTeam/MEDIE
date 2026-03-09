@@ -9,7 +9,7 @@ from app.models.pill_predictor import load_model
 from app.api import drug
 from app.api import analyze
 from app.api import pharmacy
-from routers import device, pills, pill_history
+from app.routers import device, pills, pill_history
 from app.core.database import Base, engine
 
 app = FastAPI(title="MedicLens API", version="2.0")

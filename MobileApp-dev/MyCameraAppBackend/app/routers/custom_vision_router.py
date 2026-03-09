@@ -1,6 +1,6 @@
 # app/routers/custom_vision.py
 from fastapi import APIRouter, UploadFile, File
-from app.services.custom_vision_service import predict_image
+from services.custom_vision_service import predict_image
 
 router = APIRouter(prefix="/custom-vision", tags=["CustomVision"])
 
