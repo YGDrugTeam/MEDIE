@@ -6,9 +6,9 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-  imageName: mediclens-backend
-  acrName: mediclensacr
-  acrLoginServer: mediclensacr.azurecr.io
+  imageName: medichubs-backend
+  acrName: medichubsacr
+  acrLoginServer: medichubsacr.azurecr.io
 
 stages:
 - stage: Build

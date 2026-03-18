@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 export const API_URL =
-  'https://mediclens-backend.azurewebsites.net';
+  'https://medichubs-backend.azurewebsites.net';
 
 export const analyzePill = async (photoUri) => {
   const formData = new FormData();

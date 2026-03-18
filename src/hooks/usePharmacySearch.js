@@ -5,15 +5,17 @@ import * as Location from 'expo-location';
 import axios from 'axios';
 
 const PHARM_API_URL =
-  'https://mediclens-backend.azurewebsites.net/pharmacies/duty';
+  'https://medichubs-backend.azurewebsites.net/pharmacies/duty';
 
 export default function usePharmacySearch() {
   const [nearbyPharmacies, setNearbyPharmacies] = useState([]);
   const [isSearchingMap, setIsSearchingMap] = useState(false);
 
   const openKakaoMapDetail = useCallback((p) => {
+    console.log("카카오맵 검색 이름:", p?.name);
     const query = encodeURIComponent(`${p?.name ?? ''}`);
-    const url = `https://map.kakao.com/link/search/${query}`;
+    const url = `http://m.map.kakao.com/scheme/search?q=${query}&p=${p.lat},${p.lng}`;
+    console.log("카카오맵 URL:", url);
     Linking.openURL(url);
   }, []);
 
@@ -59,6 +61,9 @@ export default function usePharmacySearch() {
 
       const items = res.data?.data ?? [];
 
+      // 🔥 여기 추가
+      // console.log("약국 API 응답 items =", items);
+
       if (items.length === 0) {
         setNearbyPharmacies([]);
         return;
@@ -71,16 +76,17 @@ export default function usePharmacySearch() {
         status: '영업중',
         phone: p.dutyTel1,
         address: p.dutyAddr,
-        lat: p.wgs84Lat,
-        lng: p.wgs84Lon,
+        lat: Number(p.wgs84Lat),
+        lng: Number(p.wgs84Lon),
       }));
-
+      console.log('geo[0] 전체 = ', geo[0]);
       setNearbyPharmacies(pharmacies);
     } catch (e) {
       console.error('약국 조회 실패', e);
       Alert.alert('오류', '당번약국 정보를 불러오지 못했습니다');
     } finally {
       setIsSearchingMap(false);
+      
     }
   }, []);
 

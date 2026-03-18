@@ -1,0 +1,15 @@
+
+Database: medichubs-db
+
+Container: pill-schedules
+
+Partition key: /userId
+
+
+
+
+방화벽허용
+az cosmosdb update `
+  --name medichubdbserver `
+  --resource-group final_4 `
+  --ip-range-filter "0.0.0.0,255.255.255.255"

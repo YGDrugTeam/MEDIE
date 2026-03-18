@@ -27,6 +27,7 @@ export default function HomeScreen({ setAppMode, onPressMap }) {
             { id: 'MAP', label: '당번 약국', icon: '📍' },
             { id: 'ALARM', label: '복약 알람', icon: '⏰' },
             { id: 'SEARCH_PILL', label: '알약 검색', icon: '🔍' },
+            { id: 'COMMUNITY', label: '게시판', icon: '📝' },
           ].map((item) => (
             <TouchableOpacity
               key={item.id}

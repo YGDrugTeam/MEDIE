@@ -4,7 +4,7 @@ import { Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
 
-const API_URL = 'https://mediclens-backend.azurewebsites.net/pill/analyze';
+const API_URL = 'https://medichubs-backend.azurewebsites.net/pill/analyze';
 
 export default function useCameraScan({ onRegisterPill } = {}) {
   const cameraRef = useRef(null);
@@ -35,6 +35,8 @@ export default function useCameraScan({ onRegisterPill } = {}) {
 
       const res = await fetch(API_URL, { method: 'POST', body: formData });
       const data = await res.json();
+
+      console.log('📌 analyze response =', JSON.stringify(data, null, 2));
 
       if (data.result === 'NOT_MEDICINE') {
         Alert.alert('알약 인식 실패', '다시 촬영해주세요');

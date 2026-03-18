@@ -1,5 +1,4 @@
-// src/screens/MapScreen.js
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -15,10 +14,17 @@ import BackToMenuBtn from '../components/BackToMenuBtn';
 export default function MapScreen({
   nearbyPharmacies = [],
   isSearchingMap = false,
+  findNearbyPharmacies,
   makePhoneCall,
   openKakaoMapDetail,
   setAppMode,
 }) {
+  useEffect(() => {
+    findNearbyPharmacies?.();
+  }, [findNearbyPharmacies]);
+
+
+  // console.log("지도에 표시될 약국 =", nearbyPharmacies);
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.subContainer}>
@@ -64,7 +70,6 @@ export default function MapScreen({
           </ScrollView>
         )}
 
-        {/* 🔙 공통 뒤로가기 버튼 */}
         <BackToMenuBtn onPress={() => setAppMode('HOME')} />
       </View>
     </SafeAreaView>

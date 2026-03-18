@@ -1,7 +1,7 @@
 // constants/api.js
 
 export const API_BASE_URL =
-  'https://mediclens-backend.azurewebsites.net';
+  'https://medichubs-backend.azurewebsites.net';
 
 export const PILL_ANALYZE_API =
   `${API_BASE_URL}/pill/analyze`;

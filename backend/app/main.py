@@ -10,9 +10,10 @@ from app.api import drug
 from app.api import analyze
 from app.api import pharmacy
 from app.routers import device, pills, pill_history
+from app.routers import board_router, support_router
 from app.core.database import Base, engine
 
-app = FastAPI(title="MedicLens API", version="2.0")
+app = FastAPI(title="MedicHubs API", version="2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,6 +32,11 @@ def startup_event():
     load_model()
 
 
+@app.get("/")
+def root():
+    return {"message": "MedicHubs API running"}
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logging.exception("🔥 서버 내부 에러")
@@ -47,3 +53,5 @@ app.include_router(pharmacy.router)
 app.include_router(device.router)
 app.include_router(pills.router)
 app.include_router(pill_history.router)
+app.include_router(board_router.router)
+app.include_router(support_router.router)

@@ -2,6 +2,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { SafeAreaView, Alert } from 'react-native';
 import { initNotifications } from './src/services/notificationInit';
+import * as Notifications from 'expo-notifications';
 
 /* styles */
 import { styles } from './src/styles/commonStyles';
@@ -18,14 +19,20 @@ import MapScreen from './src/screens/MapScreen';
 import AlarmScreen from './src/screens/AlarmScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import SearchPillScreen from './src/screens/SearchPillScreen';
+import CommunityScreen from './src/screens/CommunityScreen';
+import BoardScreen from './src/screens/BoardScreen';
+import LoginScreen from './src/screens/LoginScreen';
+import WriteBoardScreen from './src/screens/WriteBoardScreen';
+import SupportMainScreen from './src/screens/SupportMainScreen';
+import SupportListScreen from './src/screens/SupportListScreen';
+import SupportWriteScreen from './src/screens/SupportWriteScreen';
 
 /* hooks */
 import useCameraScan from './src/hooks/useCameraScan';
 import usePharmacySearch from './src/hooks/usePharmacySearch';
 import useBackHandler from './src/hooks/useBackHandler';
 import useMyPills from './src/hooks/useMyPills';
-// ✅ 경로 수정: src./ -> src/
-import usePillAlarms from './src/hooks/usePillAlarms';
+// import usePillAlarms from './src/hooks/usePillAlarms';
 
 const STORAGE_KEY = 'MY_PILLS_JSON';
 
@@ -33,7 +40,28 @@ export default function App() {
   const [isStarted, setIsStarted] = useState(false);
   const [appMode, setAppMode] = useState('HOME');
 
-  // ✅ 알림 초기화 1회
+  const [selectedSupportPost, setSelectedSupportPost] = useState(null);
+
+
+  
+
+  // 게시판 상세용 선택 게시글 상태
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [selectedBoardTitle, setSelectedBoardTitle] = useState('자유게시판');
+
+    const handleOpenBoard = (post, boardTitle = '자유게시판') => {
+    setSelectedPost(post);
+    setSelectedBoardTitle(boardTitle);
+    setAppMode('BOARD');
+  };
+
+  const handleBackToCommunity = () => {
+    setAppMode('COMMUNITY');
+  };
+
+  
+
+  // 알림 초기화 1회
   useEffect(() => {
     (async () => {
       const { status } = await initNotifications();
@@ -41,21 +69,13 @@ export default function App() {
     })();
   }, []);
 
-useEffect(() => {
-  (async () => {
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    console.log('✅ cancelAllScheduledNotificationsAsync done');
-  })();
-}, []);
-console.log('✅ cancelAllScheduledNotificationsAsync done');
-  
-  
-  // ✅ (선택) 통합 알람 훅을 쓸 거면 1번만 호출
-  // 지금 화면에서는 AlarmScreen에 myPills 기반 알람만 쓰는 중이니,
-  // 당장 필요 없으면 아예 제거해도 됨.
-  // const pillAlarms = usePillAlarms();
+  useEffect(() => {
+    (async () => {
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      console.log('✅ cancelAllScheduledNotificationsAsync done');
+    })();
+  }, []);
 
-  // ✅ 내 복용약: 훅 하나로만 관리
   const {
     myPills,
     saveMyPills,
@@ -66,13 +86,11 @@ console.log('✅ cancelAllScheduledNotificationsAsync done');
     deletePill,
   } = useMyPills({ STORAGE_KEY });
 
-  // MyPillScreen에서 알람 화면으로 이동
   const goAlarmFromPill = async (pillId) => {
-    await ensurePillSchedule(pillId); // 없으면 기본 08:00 생성
+    await ensurePillSchedule(pillId);
     setAppMode('ALARM');
   };
 
-  // ✅ 스캔 결과로 약 등록 -> saveMyPills로 저장
   const registerPillFromAiResponse = useCallback(
     async (aiResponse) => {
       const lines = aiResponse.split('\n');
@@ -133,7 +151,6 @@ console.log('✅ cancelAllScheduledNotificationsAsync done');
     [myPills, saveMyPills]
   );
 
-  // ✅ 카메라 스캔 훅
   const {
     cameraRef,
     isAnalyzing,
@@ -148,7 +165,6 @@ console.log('✅ cancelAllScheduledNotificationsAsync done');
     onRegisterPill: registerPillFromAiResponse,
   });
 
-  // ✅ 당번약국 훅
   const {
     nearbyPharmacies,
     isSearchingMap,
@@ -157,7 +173,6 @@ console.log('✅ cancelAllScheduledNotificationsAsync done');
     makePhoneCall,
   } = usePharmacySearch();
 
-  // ✅ 전역 뒤로가기 처리
   useBackHandler({
     appMode,
     setAppMode,
@@ -165,7 +180,11 @@ console.log('✅ cancelAllScheduledNotificationsAsync done');
     setShowResult,
   });
 
-  /* 시작 화면 */
+
+
+
+  
+
   if (!isStarted) {
     return (
       <StartScreen
@@ -177,7 +196,6 @@ console.log('✅ cancelAllScheduledNotificationsAsync done');
     );
   }
 
-  /* 실제 화면 */
   return (
     <SafeAreaView style={styles.safeArea}>
       {appMode === 'HOME' && <HomeFloatingButton onPress={() => setAppMode('SCAN')} />}
@@ -225,6 +243,7 @@ console.log('✅ cancelAllScheduledNotificationsAsync done');
               <MapScreen
                 setAppMode={setAppMode}
                 nearbyPharmacies={nearbyPharmacies}
+                findNearbyPharmacies={findNearbyPharmacies}
                 isSearchingMap={isSearchingMap}
                 makePhoneCall={makePhoneCall}
                 openKakaoMapDetail={openKakaoMapDetail}
@@ -248,8 +267,56 @@ console.log('✅ cancelAllScheduledNotificationsAsync done');
           case 'SEARCH_PILL':
             return <SearchPillScreen setAppMode={setAppMode} />;
 
+          case 'COMMUNITY':
+            return (
+              <CommunityScreen
+                setAppMode={setAppMode}
+                onOpenBoard={handleOpenBoard}
+              />
+            );
+
+          case 'BOARD':
+            return (
+              <BoardScreen
+                setAppMode={setAppMode}
+                post={selectedPost}
+                boardTitle={selectedBoardTitle}
+                onBack={handleBackToCommunity}
+              />
+            );
+          
+          case 'SUPPORT':
+            return (
+              <SupportMainScreen
+              setAppMode={setAppMode}
+              onOpenSupport={(item) => {
+                setSelectedSupportPost(item);
+                setAppMode('SUPPORT_DETAIL');
+              }}
+              />
+              );
+          
+            case 'SUPPORT_DETAIL':
+              return (
+                    <SupportListScreen
+                    post={selectedSupportPost}
+                    onBack={() => setAppMode('SUPPORT')}
+                    setAppMode={setAppMode}
+                  />
+                  );
+          
+          
+          case 'SUPPORT_WRITE':
+            return <SupportWriteScreen setAppMode={setAppMode} />;
+          
+          case 'WRITE_BOARD':
+            return <WriteBoardScreen setAppMode={setAppMode} />;
+
+          case 'LOGIN':
+            return <LoginScreen setAppMode={setAppMode} />;
+
           default:
-            return null;
+            return <HomeScreen setAppMode={setAppMode} />;
         }
       })()}
     </SafeAreaView>

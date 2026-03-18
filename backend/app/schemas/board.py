@@ -1,0 +1,17 @@
+from pydantic import BaseModel, Field
+
+
+class BoardCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    content: str = Field(..., min_length=1)
+    author: str = Field(..., min_length=1, max_length=100)
+    boardType: str
+
+
+class BoardResponse(BaseModel):
+    id: str
+    title: str
+    content: str
+    author: str
+    boardType: str = "free"
+    created_at: str

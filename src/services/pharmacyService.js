@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Linking, Alert } from 'react-native';
 
 const PHARM_API_URL =
-  'https://mediclens-backend.azurewebsites.net/pharmacies/duty';
+  'https://medichubs-backend.azurewebsites.net/pharmacies/duty';
 
 export const findNearbyPharmacies = async () => {
   const { status } =
@@ -35,8 +35,8 @@ export const findNearbyPharmacies = async () => {
     dist: `${Math.round(p.distance)}m`,
     phone: p.dutyTel1,
     address: p.dutyAddr,
-    lat: p.wgs84Lat,
-    lng: p.wgs84Lon,
+    lat: Number(p.wgs84Lat),
+    lng: Number(p.wgs84Lon),
   }));
 };
 
