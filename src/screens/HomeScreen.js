@@ -1,20 +1,144 @@
 import React from 'react';
-import { Text, View, TouchableOpacity, SafeAreaView } from 'react-native';
+import { Text, View, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as SecureStore from 'expo-secure-store';
 import { styles } from '../styles/commonStyles';
 
-export default function HomeScreen({ setAppMode, onPressMap }) {
+export default function HomeScreen({
+  setAppMode,
+  onPressMap,
+  isLoggedIn,
+  user,
+  setIsLoggedIn,
+  setUser,
+}) {
+  const handleLogout = async () => {
+    Alert.alert('로그아웃', '로그아웃 하시겠습니까?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '로그아웃',
+        style: 'destructive',
+        onPress: async () => {
+          await SecureStore.deleteItemAsync('access_token');
+          await SecureStore.deleteItemAsync('user_id');
+          await SecureStore.deleteItemAsync('user_name');
+          await SecureStore.deleteItemAsync('user_email');
+
+          setIsLoggedIn(false);
+          setUser(null);
+        },
+      },
+    ]);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient colors={['#F3E5F5', '#E8EAF6']} style={styles.menuContainer}>
-        {/* 💊 내 복용중 알약 버튼 */}
-        <TouchableOpacity
-          style={styles.myPillButton}
-          activeOpacity={0.85}
-          onPress={() => setAppMode('MY_PILL')}
+        {/* 상단 헤더 버튼 라인 */}
+        <View
+          style={{
+            width: '100%',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginTop: 6,
+            marginBottom: 18,
+          }}
         >
-          <Text style={styles.myPillText}>내 복용중 알약</Text>
-        </TouchableOpacity>
+          {!isLoggedIn ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setAppMode('LOGIN')}
+              style={{
+                backgroundColor: '#fff',
+                paddingHorizontal: 18,
+                paddingVertical: 12,
+                borderRadius: 22,
+                borderWidth: 1,
+                borderColor: '#ddd',
+                shadowColor: '#000',
+                shadowOpacity: 0.08,
+                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 3,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '700',
+                  color: '#444',
+                }}
+              >
+                로그인
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: '700',
+                  color: '#444',
+                  marginRight: 10,
+                }}
+              >
+                {user?.name || '사용자'}님
+              </Text>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={handleLogout}
+                style={{
+                  backgroundColor: '#fff',
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  borderRadius: 20,
+                  borderWidth: 1,
+                  borderColor: '#ddd',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: '700',
+                    color: '#444',
+                  }}
+                >
+                  로그아웃
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => setAppMode('MY_PILL')}
+            style={{
+              backgroundColor: '#fff',
+              paddingHorizontal: 18,
+              paddingVertical: 12,
+              borderRadius: 22,
+              borderWidth: 1,
+              borderColor: '#ddd',
+              shadowColor: '#000',
+              shadowOpacity: 0.08,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 3,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: '800',
+                color: '#FF7F50',
+              }}
+            >
+              내 복용중 알약
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.menuHeaderWrapper}>
           <Text style={styles.menuHeader}>무엇을 도와드릴까요?</Text>
@@ -35,9 +159,8 @@ export default function HomeScreen({ setAppMode, onPressMap }) {
               onPress={() => {
                 setAppMode(item.id);
 
-                // ✅ MAP일 때만 App.js에서 내려준 함수 호출
                 if (item.id === 'MAP') {
-                  onPressMap?.(); // 없으면 그냥 무시(안전)
+                  onPressMap?.();
                 }
               }}
             >

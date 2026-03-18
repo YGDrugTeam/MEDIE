@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,28 @@ import { styles } from '../styles/commonStyles';
 
 const BOARD_API_BASE = 'https://medichubs-backend.azurewebsites.net';
 
-export default function WriteBoardScreen({ setAppMode }) {
+export default function WriteBoardScreen({
+  setAppMode,
+  writeBoardType = 'free',
+}) {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const currentBoardType = writeBoardType || 'free';
+
+  const boardTitle = useMemo(() => {
+    switch (currentBoardType) {
+      case 'review':
+        return '복용후기 글쓰기';
+      case 'question':
+        return '질문게시판 글쓰기';
+      case 'free':
+      default:
+        return '자유게시판 글쓰기';
+    }
+  }, [currentBoardType]);
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -38,23 +55,43 @@ export default function WriteBoardScreen({ setAppMode }) {
     try {
       setIsSubmitting(true);
 
+      const payload = {
+        title: title.trim(),
+        author: author.trim(),
+        content: content.trim(),
+        boardType: currentBoardType,
+      };
+
+      console.log('게시글 등록 payload =', payload);
+
       const res = await fetch(`${BOARD_API_BASE}/boards/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          title: title.trim(),
-          author: author.trim(),
-          content: content.trim(),
-          boardType: 'free',
-        }),
+        body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        console.error('게시글 등록 응답 원문:', text);
+        throw new Error('서버가 JSON이 아닌 응답을 반환했습니다.');
+      }
+
+      console.log('게시글 등록 status =', res.status);
+      console.log('게시글 등록 data =', data);
 
       if (!res.ok) {
-        throw new Error(data?.detail || '게시글 등록 실패');
+        const detailMessage =
+          typeof data?.detail === 'string'
+            ? data.detail
+            : JSON.stringify(data?.detail || data);
+
+        throw new Error(detailMessage || '게시글 등록 실패');
       }
 
       Alert.alert('완료', '게시글이 등록되었습니다.', [
@@ -65,7 +102,7 @@ export default function WriteBoardScreen({ setAppMode }) {
       ]);
     } catch (e) {
       console.error('❌ createBoard 실패:', e);
-      Alert.alert('오류', '게시글 등록에 실패했습니다.');
+      Alert.alert('오류', e.message || '게시글 등록에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -74,7 +111,7 @@ export default function WriteBoardScreen({ setAppMode }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.subContainer}>
-        <Text style={styles.mapHeader}>글쓰기</Text>
+        <Text style={styles.mapHeader}>{boardTitle}</Text>
 
         <ScrollView
           showsVerticalScrollIndicator={false}

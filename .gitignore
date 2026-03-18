@@ -40,3 +40,11 @@ yarn-error.*
 /ios
 /android
 *.env
+backend/app/api/__pycache__/__init__.cpython-311.pyc
+backend/app/api/__pycache__/pill.cpython-311.pyc
+backend/app/core/__pycache__/config.cpython-311.pyc
+backend/app/__pycache__/main.cpython-311.pyc
+backend/app/models/__pycache__/pill_predictor.cpython-311.pyc
+backend/app/services/__pycache__/__init__.cpython-311.pyc
+backend/app/__pycache__/__init__.cpython-311.pyc
+backend/app/services/__pycache__/custom_vision_service.cpython-311.pyc

@@ -1,31 +1,7 @@
-# app/main.py
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
 import re
-import logging
-
-from app.api import pill
-from app.models.pill_predictor import load_model
-from app.api import drug
-from app.api import analyze
-from app.api import pharmacy
-from app.api.auth import router as auth_router
-
-
-from app.routers import device, pills, pill_history
-from app.routers import board_router, support_router
-from app.routers.auth import router as auth_router2
-from app.core.database import Base, engine
-
-from app.core.error_handlers import (
-    validation_exception_handler,
-    http_exception_handler,
-    global_exception_handler,
-)
-
-app = FastAPI(title="MedicHubs API", version="2.0")
+from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 
 
 def field_to_korean(field_name: str) -> str:
@@ -46,7 +22,6 @@ def translate_validation_error(err: dict) -> str:
 
     field = loc[-1] if loc else "입력값"
     field_kr = field_to_korean(str(field))
-
     msg_lower = str(msg).lower()
 
     # 이메일 형식 오류
@@ -73,18 +48,14 @@ def translate_validation_error(err: dict) -> str:
     if "field required" in msg_lower or err_type == "missing":
         return f"{field_kr}를 입력해주세요."
 
-    # 문자열 타입 오류
-    if "input should be a valid string" in msg_lower:
-        return f"{field_kr}를 올바르게 입력해주세요."
-
-    # 너무 짧은 문자열 (pydantic v2 스타일)
+    # 문자열 too short (pydantic v2)
     if err_type == "string_too_short":
         min_length = err.get("ctx", {}).get("min_length")
         if min_length:
             return f"{field_kr}는 최소 {min_length}자 이상 입력해주세요."
         return f"{field_kr}가 너무 짧습니다."
 
-    # 너무 긴 문자열
+    # 문자열 too long
     if err_type == "string_too_long":
         max_length = err.get("ctx", {}).get("max_length")
         if max_length:
@@ -94,7 +65,6 @@ def translate_validation_error(err: dict) -> str:
     return f"{field_kr} 입력값을 확인해주세요."
 
 
-@app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     errors = exc.errors()
     messages = [translate_validation_error(err) for err in errors]
@@ -109,7 +79,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
-@app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     detail = exc.detail
 
@@ -129,7 +98,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
-@app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     print("❌ 서버 내부 오류:", repr(exc))
     return JSONResponse(
@@ -139,52 +107,3 @@ async def global_exception_handler(request: Request, exc: Exception):
             "message": "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
         },
     )
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# 🔥 테이블 자동 생성
-Base.metadata.create_all(bind=engine)
-
-
-@app.on_event("startup")
-def startup_event():
-    load_model()
-
-
-@app.get("/")
-def root():
-    return {"message": "MedicHubs API running"}
-
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logging.exception("🔥 서버 내부 에러")
-    return JSONResponse(
-        status_code=500,
-        content={"error": str(exc)},
-    )
-
-
-app.include_router(pill.router)
-app.include_router(drug.router)
-app.include_router(analyze.router)
-app.include_router(pharmacy.router)
-app.include_router(device.router)
-app.include_router(pills.router)
-app.include_router(pill_history.router)
-app.include_router(board_router.router)
-app.include_router(support_router.router)
-app.include_router(auth_router)
-app.include_router(auth_router2)
-
-
-app.add_exception_handler(RequestValidationError, validation_exception_handler)
-app.add_exception_handler(HTTPException, http_exception_handler)
-app.add_exception_handler(Exception, global_exception_handler)

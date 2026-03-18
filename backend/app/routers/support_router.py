@@ -11,13 +11,20 @@ router = APIRouter(prefix="/support", tags=["support"])
 
 def _get_ticket_by_id(container, ticket_id: str):
     query = "SELECT * FROM c WHERE c.id = @id"
-    items = list(
-        container.query_items(
-            query=query,
-            parameters=[{"name": "@id", "value": ticket_id}],
-            enable_cross_partition_query=True,
+
+    try:
+        items = list(
+            container.query_items(
+                query=query,
+                parameters=[{"name": "@id", "value": ticket_id}],
+                enable_cross_partition_query=True,
+            )
         )
-    )
+    except Exception:
+        logging.exception("문의글 단건 조회 실패")
+        raise HTTPException(
+            status_code=500, detail="문의글 조회 중 오류가 발생했습니다."
+        )
 
     if not items:
         raise HTTPException(status_code=404, detail="문의글을 찾을 수 없습니다.")
@@ -35,19 +42,22 @@ def create_ticket(ticket: SupportTicketCreate):
         "content": ticket.content,
         "author": ticket.author,
         "category": ticket.category,
-        "status": "OPEN",  # OPEN / ANSWERED / CLOSED
+        "status": "OPEN",
         "answer": None,
         "answered_by": None,
         "answered_at": None,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
-    created_item = container.create_item(body=item)
-
-    return {
-        "message": "문의가 등록되었습니다.",
-        "item": created_item,
-    }
+    try:
+        created_item = container.create_item(body=item)
+        return {
+            "message": "문의가 등록되었습니다.",
+            "item": created_item,
+        }
+    except Exception:
+        logging.exception("문의 등록 실패")
+        raise HTTPException(status_code=500, detail="문의 등록 중 오류가 발생했습니다.")
 
 
 @router.get("/")
@@ -59,13 +69,17 @@ def get_tickets():
     ORDER BY c.created_at DESC
     """
 
-    items = list(
-        container.query_items(
-            query=query,
-            enable_cross_partition_query=True,
+    try:
+        items = list(
+            container.query_items(
+                query=query,
+                enable_cross_partition_query=True,
+            )
         )
-    )
-    return items
+        return items
+    except Exception:
+        logging.exception("문의 목록 조회 실패")
+        raise HTTPException(status_code=500, detail="문의 목록 조회 실패")
 
 
 @router.get("/{ticket_id}")
@@ -88,9 +102,7 @@ def answer_ticket(ticket_id: str, payload: SupportTicketAnswer):
         updated_item = container.replace_item(
             item=item["id"],
             body=item,
-            partition_key=item[
-                "author"
-            ],  # support-tickets 컨테이너 파티션키가 /author 라고 가정
+            partition_key=item["id"],
         )
         return {
             "message": "답변 등록 완료",
@@ -114,7 +126,7 @@ def close_ticket(ticket_id: str):
         updated_item = container.replace_item(
             item=item["id"],
             body=item,
-            partition_key=item["author"],  # support-tickets 파티션키 /author 가정
+            partition_key=item["id"],
         )
         return {
             "message": "문의가 종료되었습니다.",
@@ -128,16 +140,26 @@ def close_ticket(ticket_id: str):
 @router.delete("/{ticket_id}")
 def delete_ticket(ticket_id: str):
     container = get_support_container()
-    item = _get_ticket_by_id(container, ticket_id)
 
     try:
+        logging.warning(f"[DELETE START] ticket_id={ticket_id}")
+
+        item = container.read_item(
+            item=ticket_id,
+            partition_key=ticket_id,
+        )
+
+        logging.warning(f"[DELETE READ SUCCESS] item_id={item['id']}")
+
         container.delete_item(
-            item=item["id"],
-            partition_key=item["author"],  # support-tickets 파티션키 /author 가정
+            item=ticket_id,
+            partition_key=ticket_id,
         )
+
+        logging.warning(f"[DELETE SUCCESS] ticket_id={ticket_id}")
+
         return {"message": "문의글 삭제 완료"}
-    except Exception:
+
+    except Exception as e:
         logging.exception("문의글 삭제 실패")
-        raise HTTPException(
-            status_code=500, detail="문의글 삭제 중 오류가 발생했습니다."
-        )
+        raise HTTPException(status_code=500, detail=str(e))

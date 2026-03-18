@@ -136,10 +136,18 @@ export default function BoardScreen({ post, onBack }) {
     );
   }
 
+  const boardTypeLabelMap = {
+  free: '자유게시판',
+  med_question: '복약질문',
+  review: '복용후기',
+  notice: '공지사항',
+};
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.subContainer}>
-        <Text style={styles.mapHeader}>자유게시판</Text>
+        <Text style={styles.mapHeader}>
+        {boardTypeLabelMap[detail?.boardType] || '게시판'}
+      </Text>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
