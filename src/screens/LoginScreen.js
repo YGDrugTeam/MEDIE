@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  Image,
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { loginWithKakao } from '../services/kakaoAuthService';
 import { styles } from '../styles/commonStyles';
 
 const API_BASE = 'https://medichubs-backend.azurewebsites.net';
@@ -145,6 +147,42 @@ export default function LoginScreen({ setAppMode, setIsLoggedIn, setUser }) {
     }
   };
 
+  const handleKakaoLogin = async () => {
+    if (isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+
+      const result = await loginWithKakao();
+
+      if (!result.success) {
+        Alert.alert('오류', result.message || '카카오 로그인에 실패했습니다.');
+        return;
+      }
+
+      const data = result.data;
+
+      await SecureStore.setItemAsync('access_token', String(data.access_token));
+      await SecureStore.setItemAsync('user_id', String(data.user?.id ?? ''));
+      await SecureStore.setItemAsync('user_name', String(data.user?.name ?? ''));
+      await SecureStore.setItemAsync('user_email', String(data.user?.email ?? ''));
+
+      setUser(data.user);
+      setIsLoggedIn(true);
+
+      Alert.alert('완료', `${data.user?.name || '사용자'}님 로그인되었습니다.`, [
+        {
+          text: '확인',
+          onPress: () => setAppMode('HOME'),
+        },
+      ]);
+    } catch (e) {
+      Alert.alert('오류', e?.message || '카카오 로그인에 실패했습니다.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.subContainer}>
@@ -241,6 +279,28 @@ export default function LoginScreen({ setAppMode, setIsLoggedIn, setUser }) {
             <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>
               취소
             </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleKakaoLogin}
+            disabled={isSubmitting}
+            style={{
+              marginTop: 12,
+              borderRadius: 12,
+              overflow: 'hidden',
+              height: 52,
+              justifyContent: 'center',
+            }}
+          >
+            <Image
+              source={require('../../assets/kakaologin.png')}
+              style={{
+                width: '100%',
+                height: '100%',
+              }}
+              resizeMode="stretch"
+            />
           </TouchableOpacity>
 
           <TouchableOpacity
