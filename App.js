@@ -1,5 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { SafeAreaView, Alert, View, ActivityIndicator ,StyleSheet } from 'react-native';
+import {
+  SafeAreaView,
+  Alert,
+  View,
+  ActivityIndicator,
+  StyleSheet,
+  TouchableOpacity,
+  Image
+} from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { initNotifications } from './src/services/notificationInit';
 import * as Notifications from 'expo-notifications';
@@ -119,14 +127,14 @@ export default function App() {
    */
   const askMedie = async (userText) => {
     try {
-      console.log("📡 전송 데이터:", { userText, appMode }); 
+      console.log("📡 전송 데이터:", { userText, appMode });
 
       const response = await fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_input: userText || "안녕",
-          message: userText || "안녕",   
+          message: userText || "안녕",
           current_mode: appMode || "HOME" // appMode가 없을 경우 "HOME"으로 강제 설정
         }),
       });
@@ -253,8 +261,10 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {/* 1. 홈 화면일 때만 뜨는 플러스 버튼 */}
       {appMode === 'HOME' && <HomeFloatingButton onPress={() => setAppMode('SCAN')} />}
 
+      {/* 2. 화면 전환용 Switch 문 (기존 로직 그대로) */}
       {(() => {
         switch (appMode) {
           case 'HOME':
@@ -410,6 +420,19 @@ export default function App() {
             );
         }
       })()}
+
+      {/* 🐶 3. 여기서부터 메디 버튼을 다시 넣어줍니다! */}
+      <TouchableOpacity
+        activeOpacity={0.7}
+        style={localStyles.medieButton}
+        onPress={() => askMedie("안녕 메디!")}
+      >
+        <Image
+          source={require('./assets/medie-dog.png')}
+          style={localStyles.medieIcon}
+        />
+      </TouchableOpacity>
+
     </SafeAreaView>
   );
 }
