@@ -6,11 +6,16 @@ import {
   ActivityIndicator,
   StyleSheet,
   TouchableOpacity,
-  Image
+  Image,
+  Text
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { initNotifications } from './src/services/notificationInit';
 import * as Notifications from 'expo-notifications';
+
+// 🎙️ 보이스 라이브러리 추가
+import * as Speech from 'expo-speech';
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from "expo-speech-recognition";
 
 /* styles */
 import { styles } from './src/styles/commonStyles';
@@ -44,7 +49,6 @@ import useMyPills from './src/hooks/useMyPills';
 
 // agent 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
-
 const STORAGE_KEY = 'MY_PILLS_JSON';
 
 export default function App() {
@@ -53,6 +57,9 @@ export default function App() {
   const [selectedSupportPost, setSelectedSupportPost] = useState(null);
   const [writeBoardType, setWriteBoardType] = useState('free');
 
+  // [추가] 보이스 관련 상태
+  const [isListening, setIsListening] = useState(false);
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [isCheckingLogin, setIsCheckingLogin] = useState(true);
@@ -60,6 +67,88 @@ export default function App() {
   // 게시판 상세용 선택 게시글 상태
   const [selectedPost, setSelectedPost] = useState(null);
   const [selectedBoardTitle, setSelectedBoardTitle] = useState('자유게시판');
+
+  // ---------------------------------------------------------
+  // 🎙️ 보이스 엔진 핵심 로직 (통합 버전)
+  // ---------------------------------------------------------
+
+  /** 🔊 1. 메디의 목소리 (TTS) */
+  const speakMedie = (text) => {
+    Speech.speak(text, {
+      language: 'ko-KR',
+      pitch: 1.1,
+      rate: 1.0,
+    });
+  };
+
+  /** 🎙️ 2. 음성 인식 시작 (상시 대기 모드) */
+  const startContinuousListening = async () => {
+    const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+    if (!result.granted) {
+      console.log("❌ 마이크 권한 거부됨");
+      return;
+    }
+    setIsListening(true);
+    ExpoSpeechRecognitionModule.start({
+      lang: "ko-KR",
+      interimResults: true,
+      continuous: true,
+    });
+  };
+
+  /** 🧠 3. 음성 인식 이벤트 처리 (호출어 감지) */
+  useSpeechRecognitionEvent("result", (event) => {
+    const transcript = event.results[0]?.transcript;
+    // "메디야" 감지 시 자동 실행
+    if (transcript.includes("메디야") || transcript.includes("매디야")) {
+      console.log("🐶 메디 호출 감지됨:", transcript);
+      const cleanText = transcript.replace(/메디야|매디야/g, "").trim();
+      if (cleanText.length > 0) {
+        askMedie(cleanText);
+      } else {
+        speakMedie("네, 지현님! 말씀하세요 멍!");
+      }
+    }
+  });
+
+  /** 🤖 4. 메디 클라우드 통신 함수 (통합 및 중복 제거 완료) */
+  const askMedie = async (userText) => {
+    try {
+      console.log("📡 전송 데이터:", { userText, appMode });
+
+      const response = await fetch(`${API_BASE_URL}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_input: userText || "안녕",
+          message: userText || "안녕",
+          current_mode: appMode || "HOME"
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
+      }
+
+      const data = await response.json();
+      console.log("🐶 메디 응답 성공:", data);
+
+      // 화면 이동 명령 처리
+      if (data.command === "MOVE_SCREEN" && data.target) {
+        setAppMode(data.target);
+      }
+
+      // 🔊 목소리로 응답!
+      speakMedie(data.reply || "대답을 준비하지 못했어요 멍!");
+
+    } catch (e) {
+      console.log("연결 실패:", e.message);
+      Alert.alert("연결 오류", "메디 서버와 대화할 수 없어요 멍.");
+    }
+  };
+
+  // ---------------------------------------------------------
 
   const handleOpenBoard = (post, boardTitle = '자유게시판') => {
     setSelectedPost(post);
@@ -71,6 +160,7 @@ export default function App() {
     setAppMode('COMMUNITY');
   };
 
+  // 앱 시작 시 로그인 상태 로드 및 보이스 엔진 초기화
   useEffect(() => {
     const loadLoginState = async () => {
       try {
@@ -95,9 +185,13 @@ export default function App() {
     };
 
     loadLoginState();
+
+    // 🎙️ 보이스 엔진 켜기
+    startContinuousListening();
+    return () => ExpoSpeechRecognitionModule.stop();
   }, []);
 
-  // 알림 초기화 1회
+  // 알림 초기화
   useEffect(() => {
     (async () => {
       const { status } = await initNotifications();
@@ -108,7 +202,6 @@ export default function App() {
   useEffect(() => {
     (async () => {
       await Notifications.cancelAllScheduledNotificationsAsync();
-      console.log('✅ cancelAllScheduledNotificationsAsync done');
     })();
   }, []);
 
@@ -121,44 +214,6 @@ export default function App() {
     deletePillAlarm,
     deletePill,
   } = useMyPills({ STORAGE_KEY });
-
-  /**
-   * [메디 클라우드 통신 함수] 
-   */
-  const askMedie = async (userText) => {
-    try {
-      console.log("📡 전송 데이터:", { userText, appMode });
-
-      const response = await fetch(`${API_BASE_URL}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_input: userText || "안녕",
-          message: userText || "안녕",
-          current_mode: appMode || "HOME" // appMode가 없을 경우 "HOME"으로 강제 설정
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log("❌ 서버가 보낸 진짜 메시지:", errorText);
-        throw new Error(errorText);
-      }
-
-      const data = await response.json();
-      console.log("🐶 메디 응답 성공:", data);
-
-      if (data.command === "MOVE_SCREEN" && data.target) {
-        setAppMode(data.target);
-      }
-
-      Alert.alert("🐶 메디의 답변", data.reply || "대답을 준비하지 못했어요 멍!");
-
-    } catch (e) {
-      console.log("연결 실패:", e.message);
-      Alert.alert("연결 오류", e.message);
-    }
-  };
 
   const goAlarmFromPill = async (pillId) => {
     await ensurePillSchedule(pillId);
@@ -261,10 +316,8 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* 1. 홈 화면일 때만 뜨는 플러스 버튼 */}
       {appMode === 'HOME' && <HomeFloatingButton onPress={() => setAppMode('SCAN')} />}
 
-      {/* 2. 화면 전환용 Switch 문 (기존 로직 그대로) */}
       {(() => {
         switch (appMode) {
           case 'HOME':
@@ -281,25 +334,10 @@ export default function App() {
                 setUser={setUser}
               />
             );
-
           case 'LOGIN':
-            return (
-              <LoginScreen
-                setAppMode={setAppMode}
-                setIsLoggedIn={setIsLoggedIn}
-                setUser={setUser}
-              />
-            );
-
+            return <LoginScreen setAppMode={setAppMode} setIsLoggedIn={setIsLoggedIn} setUser={setUser} />;
           case 'REGISTER':
-            return (
-              <RegisterScreen
-                setAppMode={setAppMode}
-                setIsLoggedIn={setIsLoggedIn}
-                setUser={setUser}
-              />
-            );
-
+            return <RegisterScreen setAppMode={setAppMode} setIsLoggedIn={setIsLoggedIn} setUser={setUser} />;
           case 'SCAN':
             return (
               <ScanScreen
@@ -314,114 +352,34 @@ export default function App() {
                 setAppMode={setAppMode}
               />
             );
-
           case 'MY_PILL':
-            return (
-              <MyPillScreen
-                setAppMode={setAppMode}
-                myPills={myPills}
-                onToggleAlarm={goAlarmFromPill}
-                onDeletePill={deletePill}
-              />
-            );
-
+            return <MyPillScreen setAppMode={setAppMode} myPills={myPills} onToggleAlarm={goAlarmFromPill} onDeletePill={deletePill} />;
           case 'MAP':
-            return (
-              <MapScreen
-                setAppMode={setAppMode}
-                nearbyPharmacies={nearbyPharmacies}
-                findNearbyPharmacies={findNearbyPharmacies}
-                isSearchingMap={isSearchingMap}
-                makePhoneCall={makePhoneCall}
-                openKakaoMapDetail={openKakaoMapDetail}
-              />
-            );
-
+            return <MapScreen setAppMode={setAppMode} nearbyPharmacies={nearbyPharmacies} findNearbyPharmacies={findNearbyPharmacies} isSearchingMap={isSearchingMap} makePhoneCall={makePhoneCall} openKakaoMapDetail={openKakaoMapDetail} />;
           case 'ALARM':
-            return (
-              <AlarmScreen
-                myPills={myPills}
-                setAppMode={setAppMode}
-                togglePillAlarm={togglePillAlarm}
-                changePillAlarmTime={changePillAlarmTime}
-                deletePillAlarm={deletePillAlarm}
-              />
-            );
-
+            return <AlarmScreen myPills={myPills} setAppMode={setAppMode} togglePillAlarm={togglePillAlarm} changePillAlarmTime={changePillAlarmTime} deletePillAlarm={deletePillAlarm} />;
           case 'HISTORY':
             return <HistoryScreen setAppMode={setAppMode} />;
-
           case 'SEARCH_PILL':
             return <SearchPillScreen setAppMode={setAppMode} />;
-
           case 'COMMUNITY':
-            return (
-              <CommunityScreen
-                setAppMode={setAppMode}
-                onOpenBoard={handleOpenBoard}
-                setWriteBoardType={setWriteBoardType}
-              />
-            );
-
+            return <CommunityScreen setAppMode={setAppMode} onOpenBoard={handleOpenBoard} setWriteBoardType={setWriteBoardType} />;
           case 'BOARD':
-            return (
-              <BoardScreen
-                setAppMode={setAppMode}
-                post={selectedPost}
-                boardTitle={selectedBoardTitle}
-                onBack={handleBackToCommunity}
-              />
-            );
-
+            return <BoardScreen setAppMode={setAppMode} post={selectedPost} boardTitle={selectedBoardTitle} onBack={handleBackToCommunity} />;
           case 'SUPPORT':
-            return (
-              <SupportMainScreen
-                setAppMode={setAppMode}
-                onOpenSupport={(item) => {
-                  setSelectedSupportPost(item);
-                  setAppMode('SUPPORT_DETAIL');
-                }}
-              />
-            );
-
+            return <SupportMainScreen setAppMode={setAppMode} onOpenSupport={(item) => { setSelectedSupportPost(item); setAppMode('SUPPORT_DETAIL'); }} />;
           case 'SUPPORT_DETAIL':
-            return (
-              <SupportListScreen
-                post={selectedSupportPost}
-                onBack={() => setAppMode('SUPPORT')}
-                setAppMode={setAppMode}
-              />
-            );
-
+            return <SupportListScreen post={selectedSupportPost} onBack={() => setAppMode('SUPPORT')} setAppMode={setAppMode} />;
           case 'SUPPORT_WRITE':
             return <SupportWriteScreen setAppMode={setAppMode} />;
-
           case 'WRITE_BOARD':
-            return (
-              <WriteBoardScreen
-                setAppMode={setAppMode}
-                writeBoardType={writeBoardType}
-              />
-            );
-
+            return <WriteBoardScreen setAppMode={setAppMode} writeBoardType={writeBoardType} />;
           default:
-            return (
-              <HomeScreen
-                setAppMode={setAppMode}
-                onPressMap={() => {
-                  setAppMode('MAP');
-                  findNearbyPharmacies();
-                }}
-                isLoggedIn={isLoggedIn}
-                user={user}
-                setIsLoggedIn={setIsLoggedIn}
-                setUser={setUser}
-              />
-            );
+            return <HomeScreen setAppMode={setAppMode} isLoggedIn={isLoggedIn} user={user} setIsLoggedIn={setIsLoggedIn} setUser={setUser} />;
         }
       })()}
 
-      {/* 🐶 3. 여기서부터 메디 버튼을 다시 넣어줍니다! */}
+      {/* 🐶 메디 상호작용 버튼 */}
       <TouchableOpacity
         activeOpacity={0.7}
         style={localStyles.medieButton}
@@ -431,8 +389,9 @@ export default function App() {
           source={require('./assets/medie-dog.png')}
           style={localStyles.medieIcon}
         />
+        {/* 마이크 활성화 상태 표시 점 */}
+        {isListening && <View style={localStyles.listeningDot} />}
       </TouchableOpacity>
-
     </SafeAreaView>
   );
 }
@@ -456,4 +415,15 @@ const localStyles = StyleSheet.create({
     height: 60,
     resizeMode: 'contain',
   },
+  listeningDot: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#FF7F50',
+    borderWidth: 2,
+    borderColor: '#fff',
+  }
 });
