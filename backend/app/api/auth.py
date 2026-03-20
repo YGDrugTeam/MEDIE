@@ -39,7 +39,7 @@ def register(payload: RegisterRequest):
     try:
         user_item = {
             "id": str(uuid.uuid4()),
-            "name": payload.name,
+            "name": payload.nickname,
             "email": payload.email,
             "password_hash": hash_password(payload.password),
             "created_at": datetime.now(timezone.utc).isoformat(),
