@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { loginWithKakao } from '../services/kakaoAuthService';
-import { styles } from '../styles/commonStyles';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://medichubs-backend.azurewebsites.net';
 
