@@ -22,8 +22,7 @@
       [
         "@react-native-seoul/kakao-login",
         {
-          "kakaoAppKey": "카카오_네이티브_앱_키_넣기",
-          "overrideKakaoSDKVersion": "2.11.0"
+          "kakaoAppKey": "지현님의_네이티브_앱_키_숫자만"
         }
       ],
       [
@@ -41,12 +40,19 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.medichubs.app",
       "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "kakao지현님의_네이티브_앱_키_숫자만"
+            ]
+          }
+        ],
         "NSLocationWhenInUseUsageDescription": "내 주변 당번약국을 찾기 위해 위치를 사용합니다.",
         "NSSpeechRecognitionUsageDescription": "메디가 당신의 음성을 텍스트로 변환하기 위해 음성 인식 권한이 필요합니다.",
         "NSMicrophoneUsageDescription": "메디가 당신의 목소리를 듣고 대답하기 위해 마이크 권한이 필요합니다."
-      },
-      "bundleIdentifier": "com.medichubs.app"
+      }
     },
     "android": {
       "adaptiveIcon": {
