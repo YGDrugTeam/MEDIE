@@ -131,6 +131,12 @@ spec:
                   name: medichubs-secrets
                   key: COSMOS_SUPPORT_CONTAINER_NAME
 
+            - name: COSMOS_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: COSMOS_CONNECTION_STRING
+
             - name: EXPO_PUBLIC_KAKAO_REST_API_KEY
               valueFrom:
                 secretKeyRef:

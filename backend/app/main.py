@@ -166,6 +166,12 @@ def root():
     return {"message": "MedicHubs API running"}
 
 
+@app.get("/Arduino")
+def test_arduino():
+
+    return {"message": "Hello Arduino~~~~~"}
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logging.exception("🔥 서버 내부 에러")
