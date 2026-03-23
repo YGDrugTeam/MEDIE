@@ -1,0 +1,36 @@
+name: Deploy to AKS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 코드 가져오기
+      uses: actions/checkout@v3
+
+    - name: Docker Hub 로그인
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+    - name: 이미지 빌드 & 푸시
+      run: |
+        docker build -t ${{ secrets.DOCKERHUB_USERNAMEs }}/medichubs-backend:latest .
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/medichubs-backend:latest
+
+    - name: kubeconfig 설정
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+
+    - name: 배포 업데이트
+      run: |
+        kubectl set image deployment/medichubs-backend \
+        backend=${{ secrets.DOCKERHUB_USERNAME }}/medichubs-backend:latest \
+        -n dev

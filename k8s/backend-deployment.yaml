@@ -1,28 +1,168 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mediclens-backend
+  name: medichubs-backend
+  namespace: dev
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      app: mediclens-backend
+      app: medichubs-backend
   template:
     metadata:
       labels:
-        app: mediclens-backend
+        app: medichubs-backend
     spec:
       containers:
-      - name: backend
-        image: mediclensacr.azurecr.io/mediclens-backend:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8000
-        env:
-        - name: ENV
-          value: "prod"
-        - name: GROK_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: mediclens-secrets
-              key: GROK_API_KEY
+        - name: backend
+          image: tofubean123/medichubs-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: ENV
+              value: "prod"
+
+            - name: EXPO_PUBLIC_AZURE_VISION_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: EXPO_PUBLIC_AZURE_VISION_ENDPOINT
+
+            - name: EXPO_PUBLIC_AZURE_VISION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: EXPO_PUBLIC_AZURE_VISION_KEY
+
+            - name: AZURE_OPENAI_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: AZURE_OPENAI_ENDPOINT
+
+            - name: AZURE_OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: AZURE_OPENAI_API_KEY
+
+            - name: AZURE_OPENAI_DEPLOYMENT_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: AZURE_OPENAI_DEPLOYMENT_NAME
+
+            - name: OPENAI_API_VERSION
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: OPENAI_API_VERSION
+
+            - name: EXPO_CUSTUM_VISION_PREDICTION_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: EXPO_CUSTUM_VISION_PREDICTION_ENDPOINT
+
+            - name: EXPO_CUSTUM_VISION_PREDICTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: EXPO_CUSTUM_VISION_PREDICTION_KEY
+
+            - name: EXPO_CUSTUM_VISION_PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: EXPO_CUSTUM_VISION_PROJECT_ID
+
+            - name: EXPO_CUSTUM_VISION_PUBLISHED_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: EXPO_CUSTUM_VISION_PUBLISHED_NAME
+
+            - name: DRUG_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: DRUG_API_KEY
+
+            - name: DRUG_API_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: DRUG_API_ENDPOINT
+
+            - name: DUTY_PHARM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: DUTY_PHARM_API_KEY
+
+            - name: COSMOS_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: COSMOS_ENDPOINT
+
+            - name: COSMOS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: COSMOS_KEY
+
+            - name: COSMOS_DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: COSMOS_DATABASE_NAME
+
+            - name: COSMOS_CONTAINER_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: COSMOS_CONTAINER_NAME
+
+            - name: COSMOS_SUPPORT_CONTAINER_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: COSMOS_SUPPORT_CONTAINER_NAME
+
+            - name: EXPO_PUBLIC_KAKAO_REST_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: EXPO_PUBLIC_KAKAO_REST_API_KEY
+
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: JWT_SECRET_KEY
+
+            - name: BOARD_COSMOS_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: BOARD_COSMOS_DATABASE
+
+            - name: BOARD_COSMOS_CONTAINER
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: BOARD_COSMOS_CONTAINER
+
+            - name: DEBUG
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: DEBUG
+
+            - name: CORS_ORIGINS
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: CORS_ORIGINS
