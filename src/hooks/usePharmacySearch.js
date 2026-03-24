@@ -5,7 +5,7 @@ import * as Location from 'expo-location';
 import axios from 'axios';
 
 const PHARM_API_URL =
-  'http://20.106.40.121/pharmacies/duty';
+  'https://20.106.40.121/pharmacies/duty';
 
 export default function usePharmacySearch() {
   const [nearbyPharmacies, setNearbyPharmacies] = useState([]);

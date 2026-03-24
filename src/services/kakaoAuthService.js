@@ -1,6 +1,6 @@
 import { login, logout, getProfile } from '@react-native-seoul/kakao-login';
 
-const API_BASE = 'http://20.106.40.121';
+const API_BASE = 'https://20.106.40.121';
 
 function getErrorMessage(error, fallback = '카카오 로그인에 실패했습니다.') {
   if (!error) return fallback;

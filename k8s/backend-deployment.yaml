@@ -180,6 +180,18 @@ spec:
                   name: medichubs-secrets
                   key: BOARD_COSMOS_CONTAINER
 
+            - name: azure_storage_connection_string
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: azure_storage_connection_string
+
+            - name: EXPO_PUBLIC_API_URL
+              valueFrom:
+                secretKeyRef:
+                  name: medichubs-secrets
+                  key: EXPO_PUBLIC_API_URL
+
             - name: DEBUG
               valueFrom:
                 secretKeyRef:

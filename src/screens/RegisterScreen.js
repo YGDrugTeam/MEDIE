@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+
 import {
   Alert,
   SafeAreaView,
@@ -50,7 +52,11 @@ export default function RegisterScreen({ setAppMode, setIsLoggedIn, setUser }) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <LinearGradient
+    colors={['#E8F5E9', '#FFFDE7']} // 원하는 색
+    style={{ flex: 1 }}
+  >
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>
       <View style={styles.inner}>
         <Text style={styles.title}>회원가입</Text>
 
@@ -94,6 +100,10 @@ export default function RegisterScreen({ setAppMode, setIsLoggedIn, setUser }) {
           onChangeText={setPasswordConfirm}
         />
 
+        <TouchableOpacity onPress={() => setAppMode('LOGIN')}>
+          <Text style={styles.link}>로그인 화면으로 돌아가기</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.button}
           onPress={handleRegister}
@@ -104,15 +114,14 @@ export default function RegisterScreen({ setAppMode, setIsLoggedIn, setUser }) {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => setAppMode('LOGIN')}>
-          <Text style={styles.link}>로그인 화면으로 돌아가기</Text>
-        </TouchableOpacity>
+
 
         <TouchableOpacity onPress={() => setAppMode('HOME')}>
           <Text style={styles.cancelLink}>취소</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
+  </LinearGradient>
   );
 }
 
@@ -148,11 +157,13 @@ const styles = StyleSheet.create({
     color: '#222',
   },
   button: {
-    height: 52,
-    borderRadius: 12,
+    height: 79,
+    width:88,
+    borderRadius: 100,
     backgroundColor: '#10B981',
     justifyContent: 'center',
     alignItems: 'center',
+    alignSelf: 'center',
     marginTop: 6,
     marginBottom: 10,
   },
@@ -163,8 +174,8 @@ const styles = StyleSheet.create({
   },
   link: {
     textAlign: 'center',
-    marginTop: 12,
-    color: '#4F46E5',
+    color: '#000000',
+    marginBottom:6,
     fontWeight: '600',
   },
   cancelLink: {

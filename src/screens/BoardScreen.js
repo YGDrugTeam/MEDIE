@@ -12,7 +12,7 @@ import {
 
 import { styles } from '../styles/commonStyles';
 // const BOARD_API_BASE = 'https://medichubs-backend.azurewebsites.net';
-const BOARD_API_BASE = 'http://20.106.40.121';
+const BOARD_API_BASE = 'https://20.106.40.121';
 
 export default function BoardScreen({ post, onBack }) {
   const [detail, setDetail] = useState(post || null);

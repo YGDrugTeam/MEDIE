@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from '../styles/commonStyles';
 
-const API_BASE = 'http://20.106.40.121';
+const API_BASE = 'https://20.106.40.121';
 
 export default function SupportListScreen({ post, onBack, setAppMode }) {
   const [detail, setDetail] = useState(post || null);

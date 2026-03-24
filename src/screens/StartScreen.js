@@ -23,7 +23,7 @@ export default function StartScreen({ onStart }) {
   return (
     <View style={styles.startContainer}>
       <LinearGradient
-        colors={['#F3E5F5', '#FFF9C4', '#E8EAF6']}
+        colors={['#E8F5E9', '#FFFDE7']}
         style={styles.fullGradient}
       >
         <View style={styles.mainContent}>
@@ -36,14 +36,13 @@ export default function StartScreen({ onStart }) {
             />
           </Animated.View>
 
-          <Text style={styles.brandTitle}>MEDIC LENS</Text>
-          <Text style={styles.teamText}>Team YG</Text>
+          <Text style={styles.brandTitle}>MEDIC HubS</Text>
 
           <View style={styles.divider} />
 
           <Text style={styles.slogan}>
-            약을 약(樂)답게,{"\n"}
-            당신의 건강한 일상을 비추는 렌즈
+            안녕하세요,{"\n"}
+            오늘도 건강한 하루에요.
           </Text>
         </View>
 

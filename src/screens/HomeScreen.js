@@ -34,10 +34,9 @@ export default function HomeScreen({
       },
     ]);
   };
-
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#F3E5F5', '#E8EAF6']} style={styles.menuContainer}>
+      <LinearGradient colors={['#E8F5E9', '#FFFDE7']} style={styles.menuContainer}>
         {/* 상단 헤더 버튼 라인 */}
         <View
           style={{

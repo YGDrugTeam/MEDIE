@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+
 import {
   Alert,
   SafeAreaView,
@@ -11,7 +14,7 @@ import {
 import * as SecureStore from 'expo-secure-store';
 import { loginWithKakao } from '../services/kakaoAuthService';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://20.106.40.121';
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://20.106.40.121';
 
 function getErrorMessage(data, fallback = '로그인에 실패했습니다.') {
   if (!data) return fallback;
@@ -108,9 +111,14 @@ export default function LoginScreen({ setAppMode, setIsLoggedIn, setUser }) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    
+    <LinearGradient
+    colors={['#E8F5E9', '#FFFDE7']} // 원하는 색
+    style={{ flex: 1 }}
+  >
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>
       <View style={styles.inner}>
-        <Text style={styles.title}>로그인</Text>
+        <Text style={styles.title}> </Text>
 
         <Text style={styles.label}>이메일</Text>
         <TextInput
@@ -133,35 +141,40 @@ export default function LoginScreen({ setAppMode, setIsLoggedIn, setUser }) {
           onChangeText={setPassword}
         />
 
+        <TouchableOpacity onPress={() => setAppMode('REGISTER')}>
+          <Text style={styles.link}>회원가입 하러가기</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.button}
           onPress={handleEmailLogin}
           disabled={loading}
         >
           <Text style={styles.buttonText}>
-            {loading ? '처리 중...' : '일반 로그인'}
+            {loading ? '처리 중...' : '로그인'}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.button, styles.kakaoButton]}
           onPress={handleKakaoLogin}
           disabled={loading}
+          style={{ alignSelf: 'center', marginTop: 8 }}
         >
-          <Text style={[styles.buttonText, styles.kakaoButtonText]}>
-            카카오 로그인
-          </Text>
+          <Image
+            source={require('../../assets/kakaologin.png')}
+            style={{ width: 87, height: 48 }}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => setAppMode('REGISTER')}>
-          <Text style={styles.link}>회원가입 하러가기</Text>
-        </TouchableOpacity>
+
 
         <TouchableOpacity onPress={() => setAppMode('HOME')}>
           <Text style={styles.cancelLink}>취소</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
+  </LinearGradient>
   );
 }
 
@@ -197,11 +210,13 @@ const styles = StyleSheet.create({
     color: '#222',
   },
   button: {
-    height: 52,
+    height: 43,
+    width: 87,
     borderRadius: 12,
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#67A369',
     justifyContent: 'center',
     alignItems: 'center',
+    alignSelf: 'center',
     marginTop: 6,
     marginBottom: 10,
   },
@@ -218,8 +233,8 @@ const styles = StyleSheet.create({
   },
   link: {
     textAlign: 'center',
-    marginTop: 12,
-    color: '#4F46E5',
+    color: '#000000',
+    marginBottom:6,
     fontWeight: '600',
   },
   cancelLink: {

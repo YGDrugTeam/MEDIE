@@ -18,7 +18,7 @@ import usePillSearch from '../hooks/usePillSearch';
 export default function SearchPillScreen({ setAppMode }) {
   // ✅ 너 백엔드 주소로 바꿔줘
   const apiBaseUrl = useMemo(
-    () => 'http://20.106.40.121',
+    () => 'https://20.106.40.121',
     []
   );
 
