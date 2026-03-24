@@ -111,70 +111,70 @@ export default function LoginScreen({ setAppMode, setIsLoggedIn, setUser }) {
   }
 
   return (
-    
+
     <LinearGradient
-    colors={['#E8F5E9', '#FFFDE7']} // 원하는 색
-    style={{ flex: 1 }}
-  >
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>
-      <View style={styles.inner}>
-        <Text style={styles.title}> </Text>
+      colors={['#E8F5E9', '#FFFDE7']} // 원하는 색
+      style={{ flex: 1 }}
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>
+        <View style={styles.inner}>
+          <Text style={styles.title}> </Text>
 
-        <Text style={styles.label}>이메일</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="이메일을 입력하세요"
-          placeholderTextColor="#999"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-
-        <Text style={styles.label}>비밀번호</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="비밀번호를 입력하세요"
-          placeholderTextColor="#999"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
-
-        <TouchableOpacity onPress={() => setAppMode('REGISTER')}>
-          <Text style={styles.link}>회원가입 하러가기</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleEmailLogin}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? '처리 중...' : '로그인'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handleKakaoLogin}
-          disabled={loading}
-          style={{ alignSelf: 'center', marginTop: 8 }}
-        >
-          <Image
-            source={require('../../assets/kakaologin.png')}
-            style={{ width: 87, height: 48 }}
-            resizeMode="contain"
+          <Text style={styles.label}>이메일</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="이메일을 입력하세요"
+            placeholderTextColor="#999"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
           />
-        </TouchableOpacity>
+
+          <Text style={styles.label}>비밀번호</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="비밀번호를 입력하세요"
+            placeholderTextColor="#999"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+
+          <TouchableOpacity onPress={() => setAppMode('REGISTER')}>
+            <Text style={styles.link}>회원가입 하러가기</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleEmailLogin}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? '처리 중...' : '로그인'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleKakaoLogin}
+            disabled={loading}
+            style={{ alignSelf: 'center', marginTop: 8 }}
+          >
+            <Image
+              source={require('../../assets/kakaologin.png')}
+              style={{ width: 87, height: 48 }}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
 
 
 
-        <TouchableOpacity onPress={() => setAppMode('HOME')}>
-          <Text style={styles.cancelLink}>취소</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
-  </LinearGradient>
+          <TouchableOpacity onPress={() => setAppMode('HOME')}>
+            <Text style={styles.cancelLink}>취소</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   link: {
     textAlign: 'center',
     color: '#000000',
-    marginBottom:6,
+    marginBottom: 6,
     fontWeight: '600',
   },
   cancelLink: {
