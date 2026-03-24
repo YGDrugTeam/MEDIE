@@ -19,7 +19,7 @@ env:
   AKS_CLUSTER_NAME: medichubs-aks
   K8S_NAMESPACE: dev
   DEPLOYMENT_NAME: medichubs-backend
-  CONTAINER_NAME: medichubs-backend
+  CONTAINER_NAME: backend
 
 jobs:
   deploy:
