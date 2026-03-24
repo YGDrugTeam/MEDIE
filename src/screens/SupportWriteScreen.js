@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from '../styles/commonStyles';
 
-const API_BASE = 'https://medichubs-backend.azurewebsites.net';
+const API_BASE = 'http://20.106.40.121';
 
 export default function SupportWriteScreen({ setAppMode }) {
   const [title, setTitle] = useState('');

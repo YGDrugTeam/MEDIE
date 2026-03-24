@@ -15,10 +15,29 @@ spec:
     spec:
       containers:
         - name: backend
-          image: tofubean123/medichubs-backend:latest
+          image: tofubean123/medichubs-backend:v1
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+
           env:
             - name: ENV
               value: "prod"

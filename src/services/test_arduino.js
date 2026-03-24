@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const API_URL = 'https://medichubs-backend.azurewebsites.net';
+export const API_URL = 'http://20.106.40.121';
 
 // 1. 단순 연결 테스트 함수 (추가됨)
 export const testArduinoConnection = async () => {

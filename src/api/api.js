@@ -1,0 +1,1 @@
+export const API_BASE = 'http://20.106.40.121';

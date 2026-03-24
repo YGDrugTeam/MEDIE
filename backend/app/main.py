@@ -166,10 +166,15 @@ def root():
     return {"message": "MedicHubs API running"}
 
 
-@app.get("/Arduino")
+@app.get("/arduino")
 def test_arduino():
 
     return {"message": "Hello Arduino~~~~~"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 @app.exception_handler(Exception)

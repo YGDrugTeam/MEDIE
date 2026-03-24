@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Linking, Alert } from 'react-native';
 
 const PHARM_API_URL =
-  'https://medichubs-backend.azurewebsites.net/pharmacies/duty';
+  'http://20.106.40.121/pharmacies/duty';
 
 export const findNearbyPharmacies = async () => {
   const { status } =

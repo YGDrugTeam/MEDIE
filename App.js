@@ -4,9 +4,6 @@ import {
   Alert,
   View,
   ActivityIndicator,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
   Text,
   KeyboardAvoidingView,
   Platform
@@ -14,13 +11,14 @@ import {
 import * as SecureStore from 'expo-secure-store';
 import { initNotifications } from './src/services/notificationInit';
 import * as Notifications from 'expo-notifications';
+import { API_BASE } from './src/api/api';
 
 /* styles */
 import { styles } from './src/styles/commonStyles';
 
 /* components */
 import HomeFloatingButton from './src/components/HomeFloatingButton';
-import { MedieChatView } from './src/components/MedieChatView'; // 분리된 메디 컴포넌트
+import { MedieChatView } from './src/components/MedieChatView';
 
 /* screens */
 import StartScreen from './src/screens/StartScreen';
@@ -61,7 +59,6 @@ export default function App() {
   const [selectedPost, setSelectedPost] = useState(null);
   const [selectedBoardTitle, setSelectedBoardTitle] = useState('자유게시판');
 
-  // --- 게시판 핸들러 ---
   const handleOpenBoard = (post, boardTitle = '자유게시판') => {
     setSelectedPost(post);
     setSelectedBoardTitle(boardTitle);
@@ -72,7 +69,6 @@ export default function App() {
     setAppMode('COMMUNITY');
   };
 
-  // --- 초기화 로직 (로그인 및 알림) ---
   useEffect(() => {
     const loadInitialState = async () => {
       try {
@@ -99,7 +95,21 @@ export default function App() {
     loadInitialState();
   }, []);
 
-  // --- 커스텀 훅 연결 ---
+  // 테스트용 서버 확인
+  useEffect(() => {
+    const testServer = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/health`);
+        const data = await res.json();
+        console.log('health check =', data);
+      } catch (error) {
+        console.log('서버 연결 실패', error);
+      }
+    };
+
+    testServer();
+  }, []);
+
   const {
     myPills,
     saveMyPills,
@@ -115,15 +125,19 @@ export default function App() {
     setAppMode('ALARM');
   };
 
-  // --- AI 약 등록 로직 ---
   const registerPillFromAiResponse = useCallback(
     async (aiResponse) => {
       const lines = aiResponse.split('\n');
-      const pillName = lines.find((l) => l.includes('알약 이름'))?.replace('💊 알약 이름: ', '') || '알 수 없음';
-      const confidence = lines.find((l) => l.includes('신뢰도'))?.replace('신뢰도: ', '').replace('%', '') || '0';
+      const pillName =
+        lines.find((l) => l.includes('알약 이름'))?.replace('💊 알약 이름: ', '') || '알 수 없음';
+      const confidence =
+        lines.find((l) => l.includes('신뢰도'))?.replace('신뢰도: ', '').replace('%', '') || '0';
       const usageIndex = lines.findIndex((l) => l.includes('📌 복용 목적'));
       const warningIndex = lines.findIndex((l) => l.includes('⚠️ 주의사항'));
-      const usage = usageIndex >= 0 && warningIndex >= 0 ? lines.slice(usageIndex + 1, warningIndex).join('\n') : '';
+      const usage =
+        usageIndex >= 0 && warningIndex >= 0
+          ? lines.slice(usageIndex + 1, warningIndex).join('\n')
+          : '';
       const warning = warningIndex >= 0 ? lines.slice(warningIndex + 1).join('\n') : '';
 
       const newPill = {
@@ -152,7 +166,7 @@ export default function App() {
           text: '확인',
           onPress: () => {
             setAppMode('MY_PILL');
-          }
+          },
         },
       ]);
     },
@@ -163,7 +177,6 @@ export default function App() {
     cameraRef,
     isAnalyzing,
     showResult,
-    setShowResult,
     aiResponse,
     drugImageUrl,
     handleScan,
@@ -181,9 +194,8 @@ export default function App() {
     makePhoneCall,
   } = usePharmacySearch();
 
-  useBackHandler({ appMode, setAppMode, showResult, setShowResult });
+  useBackHandler({ appMode, setAppMode, showResult });
 
-  // --- 렌더링 조건 처리 ---
   if (!isStarted) {
     return <StartScreen onStart={() => { setIsStarted(true); setAppMode('HOME'); }} />;
   }
@@ -198,36 +210,135 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
         {appMode === 'HOME' && <HomeFloatingButton onPress={() => setAppMode('SCAN')} />}
 
         <View style={{ flex: 1 }}>
           {(() => {
             switch (appMode) {
-              case 'HOME': return <HomeScreen setAppMode={setAppMode} onPressMap={() => { setAppMode('MAP'); findNearbyPharmacies(); }} isLoggedIn={isLoggedIn} user={user} setIsLoggedIn={setIsLoggedIn} setUser={setUser} />;
-              case 'LOGIN': return <LoginScreen setAppMode={setAppMode} setIsLoggedIn={setIsLoggedIn} setUser={setUser} />;
-              case 'REGISTER': return <RegisterScreen setAppMode={setAppMode} setIsLoggedIn={setIsLoggedIn} setUser={setUser} />;
-              case 'SCAN': return <ScanScreen cameraRef={cameraRef} isAnalyzing={isAnalyzing} showResult={showResult} aiResponse={aiResponse} drugImageUrl={drugImageUrl} onScan={handleScan} onRegisterPill={handleRegisterPill} onCloseResult={closeResult} setAppMode={setAppMode} />;
-              case 'MY_PILL': return <MyPillScreen setAppMode={setAppMode} myPills={myPills} onToggleAlarm={goAlarmFromPill} onDeletePill={deletePill} />;
-              case 'MAP': return <MapScreen setAppMode={setAppMode} nearbyPharmacies={nearbyPharmacies} findNearbyPharmacies={findNearbyPharmacies} isSearchingMap={isSearchingMap} makePhoneCall={makePhoneCall} openKakaoMapDetail={openKakaoMapDetail} />;
-              case 'ALARM': return <AlarmScreen myPills={myPills} setAppMode={setAppMode} togglePillAlarm={togglePillAlarm} changePillAlarmTime={changePillAlarmTime} deletePillAlarm={deletePillAlarm} />;
-              case 'HISTORY': return <HistoryScreen setAppMode={setAppMode} />;
-              case 'SEARCH_PILL': return <SearchPillScreen setAppMode={setAppMode} />;
-              case 'COMMUNITY': return <CommunityScreen setAppMode={setAppMode} onOpenBoard={handleOpenBoard} setWriteBoardType={setWriteBoardType} />;
-              case 'BOARD': return <BoardScreen setAppMode={setAppMode} post={selectedPost} boardTitle={selectedBoardTitle} onBack={handleBackToCommunity} />;
-              case 'SUPPORT': return <SupportMainScreen setAppMode={setAppMode} onOpenSupport={(item) => { setSelectedSupportPost(item); setAppMode('SUPPORT_DETAIL'); }} />;
-              case 'SUPPORT_DETAIL': return <SupportListScreen post={selectedSupportPost} onBack={() => setAppMode('SUPPORT')} setAppMode={setAppMode} />;
-              case 'SUPPORT_WRITE': return <SupportWriteScreen setAppMode={setAppMode} />;
-              case 'WRITE_BOARD': return <WriteBoardScreen setAppMode={setAppMode} writeBoardType={writeBoardType} />;
-              default: return <HomeScreen setAppMode={setAppMode} isLoggedIn={isLoggedIn} user={user} setIsLoggedIn={setIsLoggedIn} setUser={setUser} />;
+              case 'HOME':
+                return (
+                  <HomeScreen
+                    setAppMode={setAppMode}
+                    onPressMap={() => {
+                      setAppMode('MAP');
+                      findNearbyPharmacies();
+                    }}
+                    isLoggedIn={isLoggedIn}
+                    user={user}
+                    setIsLoggedIn={setIsLoggedIn}
+                    setUser={setUser}
+                  />
+                );
+              case 'LOGIN':
+                return <LoginScreen setAppMode={setAppMode} setIsLoggedIn={setIsLoggedIn} setUser={setUser} />;
+              case 'REGISTER':
+                return <RegisterScreen setAppMode={setAppMode} setIsLoggedIn={setIsLoggedIn} setUser={setUser} />;
+              case 'SCAN':
+                return (
+                  <ScanScreen
+                    cameraRef={cameraRef}
+                    isAnalyzing={isAnalyzing}
+                    showResult={showResult}
+                    aiResponse={aiResponse}
+                    drugImageUrl={drugImageUrl}
+                    onScan={handleScan}
+                    onRegisterPill={handleRegisterPill}
+                    onCloseResult={closeResult}
+                    setAppMode={setAppMode}
+                  />
+                );
+              case 'MY_PILL':
+                return (
+                  <MyPillScreen
+                    setAppMode={setAppMode}
+                    myPills={myPills}
+                    onToggleAlarm={goAlarmFromPill}
+                    onDeletePill={deletePill}
+                  />
+                );
+              case 'MAP':
+                return (
+                  <MapScreen
+                    setAppMode={setAppMode}
+                    nearbyPharmacies={nearbyPharmacies}
+                    findNearbyPharmacies={findNearbyPharmacies}
+                    isSearchingMap={isSearchingMap}
+                    makePhoneCall={makePhoneCall}
+                    openKakaoMapDetail={openKakaoMapDetail}
+                  />
+                );
+              case 'ALARM':
+                return (
+                  <AlarmScreen
+                    myPills={myPills}
+                    setAppMode={setAppMode}
+                    togglePillAlarm={togglePillAlarm}
+                    changePillAlarmTime={changePillAlarmTime}
+                    deletePillAlarm={deletePillAlarm}
+                  />
+                );
+              case 'HISTORY':
+                return <HistoryScreen setAppMode={setAppMode} />;
+              case 'SEARCH_PILL':
+                return <SearchPillScreen setAppMode={setAppMode} />;
+              case 'COMMUNITY':
+                return (
+                  <CommunityScreen
+                    setAppMode={setAppMode}
+                    onOpenBoard={handleOpenBoard}
+                    setWriteBoardType={setWriteBoardType}
+                  />
+                );
+              case 'BOARD':
+                return (
+                  <BoardScreen
+                    setAppMode={setAppMode}
+                    post={selectedPost}
+                    boardTitle={selectedBoardTitle}
+                    onBack={handleBackToCommunity}
+                  />
+                );
+              case 'SUPPORT':
+                return (
+                  <SupportMainScreen
+                    setAppMode={setAppMode}
+                    onOpenSupport={(item) => {
+                      setSelectedSupportPost(item);
+                      setAppMode('SUPPORT_DETAIL');
+                    }}
+                  />
+                );
+              case 'SUPPORT_DETAIL':
+                return (
+                  <SupportListScreen
+                    post={selectedSupportPost}
+                    onBack={() => setAppMode('SUPPORT')}
+                    setAppMode={setAppMode}
+                  />
+                );
+              case 'SUPPORT_WRITE':
+                return <SupportWriteScreen setAppMode={setAppMode} />;
+              case 'WRITE_BOARD':
+                return <WriteBoardScreen setAppMode={setAppMode} writeBoardType={writeBoardType} />;
+              default:
+                return (
+                  <HomeScreen
+                    setAppMode={setAppMode}
+                    isLoggedIn={isLoggedIn}
+                    user={user}
+                    setIsLoggedIn={setIsLoggedIn}
+                    setUser={setUser}
+                  />
+                );
             }
           })()}
         </View>
 
-        {/* 🐶 메디 통합 레이어 (음성 인식 + 채팅 UI + 확인 버튼) */}
         <MedieChatView appMode={appMode} setAppMode={setAppMode} />
-
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

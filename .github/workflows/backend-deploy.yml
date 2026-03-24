@@ -1,0 +1,62 @@
+name: backend-deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-deploy.yml"
+
+permissions:
+  contents: read
+
+env:
+  ACR_NAME: medichubsacr
+  ACR_LOGIN_SERVER: medichubsacr.azurecr.io
+  IMAGE_NAME: medichubs-backend
+  AKS_RESOURCE_GROUP: final_4
+  AKS_CLUSTER_NAME: medichubs-aks
+  K8S_NAMESPACE: dev
+  DEPLOYMENT_NAME: medichubs-backend
+  CONTAINER_NAME: medichubs-backend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: ACR Login
+        run: az acr login --name $ACR_NAME
+
+      - name: Build and Push Docker Image
+        run: |
+          IMAGE_TAG=${{ github.sha }}
+          docker build -t $ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG ./backend
+          docker push $ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Set AKS Context
+        uses: Azure/aks-set-context@v5
+        with:
+          resource-group: ${{ env.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ env.AKS_CLUSTER_NAME }}
+
+      - name: Update Deployment Image
+        run: |
+          kubectl set image deployment/$DEPLOYMENT_NAME \
+            $CONTAINER_NAME=$ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG \
+            -n $K8S_NAMESPACE
+
+      - name: Verify Rollout
+        run: |
+          kubectl rollout status deployment/$DEPLOYMENT_NAME -n $K8S_NAMESPACE
+          kubectl get pods -n $K8S_NAMESPACE

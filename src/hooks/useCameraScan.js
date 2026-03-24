@@ -4,7 +4,7 @@ import { Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
 
-const API_URL = 'https://medichubs-backend.azurewebsites.net/pill/analyze';
+const API_URL = 'http://20.106.40.121/pill/analyze';
 
 export default function useCameraScan({ onRegisterPill } = {}) {
   const cameraRef = useRef(null);

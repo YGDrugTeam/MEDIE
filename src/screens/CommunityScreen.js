@@ -17,7 +17,7 @@ import {
 import { styles } from '../styles/commonStyles';
 import BackToMenuBtn from '../components/BackToMenuBtn';
 
-const BOARD_API_BASE = 'https://medichubs-backend.azurewebsites.net';
+const BOARD_API_BASE = 'http://20.106.40.121';
 
 export default function CommunityScreen({
   setAppMode,
