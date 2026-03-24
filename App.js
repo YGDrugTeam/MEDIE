@@ -9,6 +9,7 @@ import {
   Platform
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { ExpoSpeechRecognitionModule } from "expo-speech-recognition";
 import { initNotifications } from './src/services/notificationInit';
 import * as Notifications from 'expo-notifications';
 import { API_BASE } from './src/api/api';
@@ -70,29 +71,23 @@ export default function App() {
   };
 
   useEffect(() => {
-    const loadInitialState = async () => {
+    const setup = async () => {
       try {
-        const accessToken = await SecureStore.getItemAsync('access_token');
-        const userId = await SecureStore.getItemAsync('user_id');
-        const userName = await SecureStore.getItemAsync('user_name');
-        const userEmail = await SecureStore.getItemAsync('user_email');
+        // 1. 알림 권한 설정 (기존 기능)
+        console.log("🔔 알림 권한 설정 중...");
+        await initNotifications();
 
-        if (accessToken && userId && userName && userEmail) {
-          setIsLoggedIn(true);
-          setUser({ id: userId, name: userName, email: userEmail });
-        }
+        // 2. 마이크 권한 요청 (추가된 기능!)
+        console.log("🎤 마이크 권한 요청 중...");
+        const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+        console.log("🎤 마이크 권한 최종 상태:", result.granted);
 
-        const { status } = await initNotifications();
-        console.log('🔔 알림 권한:', status);
-        await Notifications.cancelAllScheduledNotificationsAsync();
-      } catch (e) {
-        console.error('초기 설정 실패:', e);
-      } finally {
-        setIsCheckingLogin(false);
+      } catch (error) {
+        console.error("⚠️ 초기 설정 중 오류 발생:", error);
       }
     };
 
-    loadInitialState();
+    setup();
   }, []);
 
   // 테스트용 서버 확인
