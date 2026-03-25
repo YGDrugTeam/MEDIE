@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { loginWithKakao } from '../services/kakaoAuthService';
+import { loginWithEmail } from '../services/authService';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://20.106.40.121';
 
@@ -64,6 +65,8 @@ export default function LoginScreen({ setAppMode, setIsLoggedIn, setUser }) {
   const [loading, setLoading] = useState(false);
 
   async function handleEmailLogin() {
+      console.log('✅ 이메일 로그인 버튼 눌림');
+
     if (!email.trim() || !password.trim()) {
       Alert.alert('안내', '이메일과 비밀번호를 입력해주세요.');
       return;
