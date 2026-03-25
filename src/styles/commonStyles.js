@@ -7,7 +7,7 @@ const SCAN_GUIDE_SIZE = width * 0.75;
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  safeArea: { flex: 1, backgroundColor: '#F3E5F5' },
+  safeArea: { flex: 1, backgroundColor: '#FFFDE7' },
   subContainer: { flex: 1, padding: 25 },
   startContainer: { flex: 1 },
   fullGradient: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 30 },
