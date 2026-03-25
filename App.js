@@ -73,38 +73,36 @@ export default function App() {
   useEffect(() => {
     const setup = async () => {
       try {
-        // 1. 알림 권한 설정 (기존 기능)
+        setIsCheckingLogin(true);
+
+        // 1. 알림 권한 설정
         console.log("🔔 알림 권한 설정 중...");
         await initNotifications();
 
-<<<<<<< HEAD
-        // 2. 마이크 권한 요청 (추가된 기능!)
+        // 2. 마이크 권한 요청
         console.log("🎤 마이크 권한 요청 중...");
         const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
         console.log("🎤 마이크 권한 최종 상태:", result.granted);
 
-      } catch (error) {
-        console.error("⚠️ 초기 설정 중 오류 발생:", error);
-=======
-        if (accessToken && userId && userName && userEmail) {
+        // 3. 로그인 상태 체크 (SecureStore에서 가져오기)
+        const accessToken = await SecureStore.getItemAsync('accessToken');
+        const userId = await SecureStore.getItemAsync('userId');
+        const userName = await SecureStore.getItemAsync('userName');
+        const userEmail = await SecureStore.getItemAsync('userEmail');
+
+        if (accessToken && userId) {
           setIsLoggedIn(true);
           setUser({ id: userId, name: userName, email: userEmail });
           setAppMode('HOME');
         } else {
           setIsLoggedIn(false);
-          setUser(null);
           setAppMode('LOGIN');
         }
-
-        const { status } = await initNotifications();
-        console.log('🔔 알림 권한:', status);
-        await Notifications.cancelAllScheduledNotificationsAsync();
-      } catch (e) {
-        console.error('초기 설정 실패:', e);
-        setAppMode('LOGIN');
+      } catch (error) {
+        console.error("⚠️ 초기 설정 중 오류 발생:", error);
+        setAppMode('LOGIN'); // 에러 시 안전하게 로그인으로 이동
       } finally {
         setIsCheckingLogin(false);
->>>>>>> 916bc93 (화면 수정)
       }
     };
 
@@ -219,7 +217,7 @@ export default function App() {
           setAppMode(isLoggedIn ? 'HOME' : 'LOGIN');
         }}
         user={isLoggedIn ? user : null}
-        
+
       />
     );
   }
