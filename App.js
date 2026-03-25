@@ -59,6 +59,7 @@ export default function App() {
 
   const [selectedPost, setSelectedPost] = useState(null);
   const [selectedBoardTitle, setSelectedBoardTitle] = useState('자유게시판');
+  const [pillHistory, setPillHistory] = useState([]);
 
   const handleOpenBoard = (post, boardTitle = '자유게시판') => {
     setSelectedPost(post);
@@ -133,6 +134,49 @@ export default function App() {
     deletePill,
   } = useMyPills({ STORAGE_KEY });
 
+  const completeNextDose = useCallback(async () => {
+    const allSchedules = myPills.flatMap((pill) =>
+      (pill.schedules || []).map((schedule, index) => ({
+        ...schedule,
+        pillId: pill.id,
+        pillName: pill.name,
+        scheduleIndex: index,
+      }))
+    );
+
+    const next = allSchedules
+      .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'))
+      .find((item) => !item.takenToday);
+
+    if (!next) return;
+
+    const updated = myPills.map((pill) => {
+      if (pill.id !== next.pillId) return pill;
+      return {
+        ...pill,
+        schedules: pill.schedules.map((s, i) =>
+          i === next.scheduleIndex ? { ...s, takenToday: true } : s
+        ),
+      };
+    });
+    await saveMyPills(updated);
+
+    // 히스토리 기록 추가
+    const today = new Date();
+    const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    setPillHistory((prev) => [
+      ...prev,
+      {
+        date: dateKey,
+        pillName: next.pillName,
+        label: `${next.scheduleIndex + 1}회차`,
+        time: next.time,
+        taken: true,
+      },
+    ]);
+  }, [myPills, saveMyPills]);
+
   const goAlarmFromPill = async (pillId) => {
     await ensurePillSchedule(pillId);
     setAppMode('ALARM');
@@ -175,12 +219,7 @@ export default function App() {
       }
 
       Alert.alert('등록 완료', '내 복용약으로 등록되었습니다.', [
-        {
-          text: '확인',
-          onPress: () => {
-            setAppMode('MY_PILL');
-          },
-        },
+        { text: '확인', onPress: () => setAppMode('MY_PILL') },
       ]);
     },
     [myPills, saveMyPills]
@@ -396,7 +435,13 @@ export default function App() {
           })()}
         </View>
 
-        <MedieChatView appMode={appMode} setAppMode={setAppMode} />
+        <MedieChatView
+          appMode={appMode}
+          setAppMode={setAppMode}
+          onCompleteNextDose={completeNextDose}
+          onChangeAlarmTime={changePillAlarmTime}
+          myPills={myPills}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

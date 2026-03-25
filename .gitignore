@@ -49,3 +49,8 @@ backend/app/models/__pycache__/pill_predictor.cpython-311.pyc
 backend/app/services/__pycache__/__init__.cpython-311.pyc
 backend/app/__pycache__/__init__.cpython-311.pyc
 backend/app/services/__pycache__/custom_vision_service.cpython-311.pyc
+
+.venv/
+venv/
+ios/Pods/
+ios/build/
