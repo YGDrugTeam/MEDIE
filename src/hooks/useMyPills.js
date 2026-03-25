@@ -55,7 +55,7 @@ async function cancelIfExists(id) {
   if (!id) return;
   try {
     await Notifications.cancelScheduledNotificationAsync(id);
-  } catch {}
+  } catch { }
 }
 
 /**
@@ -71,9 +71,17 @@ export async function scheduleDailyAlarm({ pillName, time, soundOn, vibrationOn 
 
   const trigger =
     Platform.OS === 'android'
-      ? { type: 'daily', hour, minute, repeats: true, channelId: CHANNEL_ID }
-      : { hour, minute, repeats: true };
-
+      ? {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute,
+        channelId: CHANNEL_ID,
+      }
+      : {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute,
+      };
   return Notifications.scheduleNotificationAsync({
     content: {
       title: '💊 복약 알림',
@@ -121,7 +129,7 @@ export default function useMyPills({
         console.error('❌ myPills load 실패:', e);
         try {
           await SecureStore.deleteItemAsync(STORAGE_KEY);
-        } catch {}
+        } catch { }
         setMyPills([]);
       }
     })();

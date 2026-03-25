@@ -38,6 +38,8 @@ import WriteBoardScreen from './src/screens/WriteBoardScreen';
 import SupportMainScreen from './src/screens/SupportMainScreen';
 import SupportListScreen from './src/screens/SupportListScreen';
 import SupportWriteScreen from './src/screens/SupportWriteScreen';
+import MyPageScreen from './src/screens/MyPageScreen';
+import EditPostScreen from './src/screens/EditPostScreen';
 
 /* hooks */
 import useCameraScan from './src/hooks/useCameraScan';
@@ -60,7 +62,7 @@ export default function App() {
   const [selectedPost, setSelectedPost] = useState(null);
   const [selectedBoardTitle, setSelectedBoardTitle] = useState('자유게시판');
   const [pillHistory, setPillHistory] = useState([]);
-
+  
   const handleOpenBoard = (post, boardTitle = '자유게시판') => {
     setSelectedPost(post);
     setSelectedBoardTitle(boardTitle);
@@ -395,6 +397,14 @@ export default function App() {
                   />
                 );
 
+              case 'EDIT_POST':
+                return (
+                  <EditPostScreen
+                    setAppMode={setAppMode}
+                    post={selectedPost}
+                  />
+                );
+
               case 'SUPPORT':
                 return (
                   <SupportMainScreen
@@ -417,6 +427,28 @@ export default function App() {
 
               case 'SUPPORT_WRITE':
                 return <SupportWriteScreen setAppMode={setAppMode} />;
+
+              case 'MY_PAGE':
+                return (
+                  <MyPageScreen
+                    user={user}
+                    myPills={myPills}
+                    pillAlarms={myPills.flatMap((pill) => pill.schedules || [])}
+                    myPosts={[]}
+                    onBack={() => setAppMode('HOME')}
+                    onNavigate={(mode) => {
+                      if (mode === 'PROFILE_EDIT') {
+                        return;
+                      }
+                      setAppMode(mode);
+                    }}
+                    onLogout={() => {
+                      setIsLoggedIn(false);
+                      setUser(null);
+                      setAppMode('LOGIN');
+                    }}
+                  />
+                );
 
               case 'WRITE_BOARD':
                 return <WriteBoardScreen setAppMode={setAppMode} writeBoardType={writeBoardType} />;

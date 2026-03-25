@@ -1,5 +1,4 @@
-// BoardScreen
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,13 +7,31 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-import { styles } from '../styles/commonStyles';
-// const BOARD_API_BASE = 'https://medichubs-backend.azurewebsites.net';
 const BOARD_API_BASE = 'http://20.106.40.121';
 
-export default function BoardScreen({ post, onBack }) {
+const COLORS = {
+  background: '#FFFFFF',
+  primary: '#065809',
+  primaryDark: '#006E07',
+  secondary: '#67A369',
+  warm: '#FFFDE7',
+  muted: '#8C8C8C',
+  border: '#C8D8B5',
+  cardBg: '#FFFFFF',
+  danger: '#E45A4F',
+};
+
+export default function BoardScreen({
+  post,
+  onBack,
+  setAppMode,
+  onEditBoard,
+  currentUserName = '',
+}) {
   const [detail, setDetail] = useState(post || null);
   const [isLoading, setIsLoading] = useState(!post?.id);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -31,13 +48,17 @@ export default function BoardScreen({ post, onBack }) {
 
       const url = `${BOARD_API_BASE}/boards/${post.id}`;
       console.log('상세조회 요청 URL =', url);
-      console.log('상세조회 post.id =', post.id);
 
       const res = await fetch(url);
-      const data = await res.json();
+      const text = await res.text();
 
-      console.log('상세조회 status =', res.status);
-      console.log('상세조회 data =', data);
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        console.error('상세조회 응답 원문:', text);
+        throw new Error('서버가 JSON이 아닌 응답을 반환했습니다.');
+      }
 
       if (!res.ok) {
         throw new Error(data?.detail || '게시글 조회 실패');
@@ -56,6 +77,21 @@ export default function BoardScreen({ post, onBack }) {
     fetchBoardDetail();
   }, [fetchBoardDetail]);
 
+  const isMine = useMemo(() => {
+    if (!currentUserName || !detail?.author) return false;
+    return String(currentUserName).trim() === String(detail.author).trim();
+  }, [currentUserName, detail?.author]);
+
+  const boardTypeLabelMap = {
+    free: '자유수다',
+    question: '복약질문',
+    review: '복용후기',
+    notice: '공지사항',
+    med_question: '복약질문',
+  };
+
+  const boardLabel = boardTypeLabelMap[detail?.boardType] || '커뮤니티';
+
   const handleDelete = async () => {
     if (!detail?.id || isDeleting) return;
 
@@ -69,16 +105,16 @@ export default function BoardScreen({ post, onBack }) {
             setIsDeleting(true);
 
             const url = `${BOARD_API_BASE}/boards/${detail.id}`;
-            console.log('삭제 요청 URL =', url);
+            const res = await fetch(url, { method: 'DELETE' });
+            const text = await res.text();
 
-            const res = await fetch(url, {
-              method: 'DELETE',
-            });
-
-            const data = await res.json();
-
-            console.log('삭제 status =', res.status);
-            console.log('삭제 data =', data);
+            let data;
+            try {
+              data = JSON.parse(text);
+            } catch (err) {
+              console.error('삭제 응답 원문:', text);
+              throw new Error('서버가 JSON이 아닌 응답을 반환했습니다.');
+            }
 
             if (!res.ok) {
               throw new Error(data?.detail || '게시글 삭제 실패');
@@ -98,14 +134,42 @@ export default function BoardScreen({ post, onBack }) {
     ]);
   };
 
+  const handleEdit = () => {
+    if (typeof onEditBoard === 'function') {
+      onEditBoard(detail);
+      return;
+    }
+    Alert.alert('안내', '수정 화면 연결이 필요합니다.');
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={[styles.subContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-          <ActivityIndicator size="large" />
-          <Text style={{ marginTop: 12, color: '#777' }}>
-            게시글을 불러오는 중...
-          </Text>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onBack} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={34} color={COLORS.secondary} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>커뮤니티</Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setAppMode('SCAN')}
+              style={styles.scanButton}
+            >
+              <Ionicons
+                name="camera-outline"
+                size={18}
+                color={COLORS.secondary}
+                style={{ marginRight: 6 }}
+              />
+              <Text style={styles.scanButtonText}>약 스캔</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.centerLoading}>
+            <ActivityIndicator size="large" color={COLORS.primaryDark} />
+            <Text style={styles.loadingText}>게시글을 불러오는 중...</Text>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -114,141 +178,448 @@ export default function BoardScreen({ post, onBack }) {
   if (!detail) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={[styles.subContainer, { justifyContent: 'center' }]}>
-          <Text style={{ fontSize: 16, color: '#555', textAlign: 'center' }}>
-            게시글 정보를 불러올 수 없습니다.
-          </Text>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onBack} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={34} color={COLORS.secondary} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>커뮤니티</Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setAppMode('SCAN')}
+              style={styles.scanButton}
+            >
+              <Ionicons
+                name="camera-outline"
+                size={18}
+                color={COLORS.secondary}
+                style={{ marginRight: 6 }}
+              />
+              <Text style={styles.scanButtonText}>약 스캔</Text>
+            </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity
-            onPress={onBack}
-            style={{
-              marginTop: 20,
-              backgroundColor: '#FF7F50',
-              paddingVertical: 12,
-              borderRadius: 12,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: '#fff', fontWeight: '700' }}>뒤로가기</Text>
-          </TouchableOpacity>
+          <View style={styles.centerLoading}>
+            <Text style={styles.emptyText}>게시글 정보를 불러올 수 없습니다.</Text>
+            <TouchableOpacity onPress={onBack} style={styles.secondaryBtn}>
+              <Text style={styles.secondaryBtnText}>목록으로</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     );
   }
 
-  const boardTypeLabelMap = {
-  free: '자유게시판',
-  med_question: '복약질문',
-  review: '복용후기',
-  notice: '공지사항',
-};
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.subContainer}>
-        <Text style={styles.mapHeader}>
-        {boardTypeLabelMap[detail?.boardType] || '게시판'}
-      </Text>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={34} color={COLORS.secondary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>커뮤니티</Text>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setAppMode('SCAN')}
+            style={styles.scanButton}
+          >
+            <Ionicons
+              name="camera-outline"
+              size={18}
+              color={COLORS.secondary}
+              style={{ marginRight: 6 }}
+            />
+            <Text style={styles.scanButtonText}>약 스캔</Text>
+          </TouchableOpacity>
+        </View>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 30 }}
+          contentContainerStyle={styles.scrollContent}
         >
-          <View
-            style={{
-              backgroundColor: '#fff',
-              borderRadius: 16,
-              padding: 18,
-              borderWidth: 1,
-              borderColor: '#eee',
-              marginTop: 14,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 20,
-                fontWeight: '800',
-                color: '#222',
-                marginBottom: 14,
-              }}
-            >
-              {detail.title}
-            </Text>
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryBadgeText}>{boardLabel}</Text>
+          </View>
 
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                marginBottom: 10,
-                paddingBottom: 12,
-                borderBottomWidth: 1,
-                borderBottomColor: '#f1f1f1',
-              }}
-            >
-              <Text style={{ fontSize: 13, color: '#666' }}>
-                작성자: {detail.author}
-              </Text>
-              <Text style={{ fontSize: 13, color: '#999' }}>
+          <View style={styles.detailCard}>
+            <Text style={styles.title}>{detail.title}</Text>
+
+            <View style={styles.metaRow}>
+              <Text style={styles.metaText}>작성자 {detail.author || '작성자 없음'}</Text>
+              <Text style={styles.metaText}>
                 {detail.created_at ? detail.created_at.slice(0, 10) : ''}
               </Text>
             </View>
 
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'flex-end',
-                marginBottom: 16,
-              }}
-            >
-              <Text style={{ fontSize: 13, color: '#888' }}>
-                조회수: {detail.views ?? 0}
-              </Text>
+            {isMine ? (
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => onEditBoard(detail)}
+                  style={styles.editBtn}
+                >
+                  <Ionicons
+                    name="create-outline"
+                    size={18}
+                    color={COLORS.primaryDark}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={styles.editBtnText}>수정</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={handleDelete}
+                  disabled={isDeleting}
+                  style={[styles.deleteBtn, isDeleting && { opacity: 0.7 }]}
+                >
+                  <Ionicons
+                    name="trash-outline"
+                    size={18}
+                    color="#FFFFFF"
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={styles.deleteBtnText}>
+                    {isDeleting ? '삭제 중...' : '삭제'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Ionicons name="eye" size={16} color="#A9C68A" />
+                <Text style={styles.statText}>{detail.views ?? 0}</Text>
+              </View>
+
+              <View style={styles.statDivider} />
+
+              <View style={styles.statItem}>
+                <Ionicons name="heart" size={16} color="#B9D49D" />
+                <Text style={styles.statText}>{detail.likes ?? 0}</Text>
+              </View>
             </View>
 
-            <Text
-              style={{
-                fontSize: 15,
-                lineHeight: 24,
-                color: '#333',
-              }}
-            >
-              {detail.content}
+            <View style={styles.contentDivider} />
+
+            <Text style={styles.contentText}>
+              {detail.content || '내용이 없습니다.'}
             </Text>
           </View>
 
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleDelete}
-            disabled={isDeleting}
-            style={{
-              marginTop: 18,
-              backgroundColor: isDeleting ? '#ccc' : '#E74C3C',
-              borderRadius: 12,
-              paddingVertical: 14,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>
-              {isDeleting ? '삭제 중...' : '게시글 삭제'}
-            </Text>
-          </TouchableOpacity>
+          {isMine ? (
+            <View style={styles.actionRow}>
+              <TouchableOpacity onPress={handleEdit} style={styles.editBtn}>
+                <Ionicons
+                  name="create-outline"
+                  size={18}
+                  color={COLORS.primaryDark}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={styles.editBtnText}>수정</Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={onBack}
-            style={{
-              marginTop: 12,
-              backgroundColor: '#FF7F50',
-              borderRadius: 12,
-              paddingVertical: 14,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>
-              목록으로
-            </Text>
+              <TouchableOpacity
+                onPress={handleDelete}
+                disabled={isDeleting}
+                style={[styles.deleteBtn, isDeleting && { opacity: 0.7 }]}
+              >
+                <Ionicons
+                  name="trash-outline"
+                  size={18}
+                  color="#FFFFFF"
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={styles.deleteBtnText}>
+                  {isDeleting ? '삭제 중...' : '삭제'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          <TouchableOpacity onPress={onBack} style={styles.secondaryBtn}>
+            <Text style={styles.secondaryBtnText}>목록으로</Text>
           </TouchableOpacity>
         </ScrollView>
+
+        <View style={styles.bottomBar}>
+          <TouchableOpacity onPress={() => setAppMode('HOME')} style={styles.bottomTabItem}>
+            <Ionicons name="home" size={28} color={COLORS.secondary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setAppMode('MAP')} style={styles.bottomTabItem}>
+            <Ionicons name="location" size={28} color={COLORS.secondary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setAppMode('SEARCH_PILL')} style={styles.bottomTabItem}>
+            <Ionicons name="search" size={28} color={COLORS.secondary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setAppMode('COMMUNITY')} style={styles.bottomTabItem}>
+            <Ionicons name="chatbubble-ellipses" size={28} color={COLORS.secondary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setAppMode('MYPAGE')} style={styles.bottomTabItem}>
+            <Ionicons name="person" size={28} color={COLORS.secondary} />
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: COLORS.background },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    paddingHorizontal: 20,
+    paddingTop: 6,
+  },
+
+  header: {
+    height: 72,
+    justifyContent: 'center',
+    position: 'relative',
+    marginBottom: 4,
+  },
+  backButton: {
+    position: 'absolute',
+    left: 0,
+    top: 14,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  headerTitle: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 14,
+    textAlign: 'center',
+    fontSize: 30,
+    fontWeight: '800',
+    color: COLORS.primaryDark,
+  },
+  scanButton: {
+    position: 'absolute',
+    right: 0,
+    top: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: COLORS.secondary,
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    zIndex: 2,
+  },
+  scanButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.primaryDark,
+  },
+
+  scrollContent: {
+    paddingTop: 10,
+    paddingBottom: 140,
+  },
+
+  categoryBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#EAF4E3',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 14,
+  },
+  categoryBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.primaryDark,
+  },
+
+  detailCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 24,
+    paddingHorizontal: 22,
+    paddingVertical: 22,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+
+  actionRow: {
+    flexDirection: 'row',
+    marginTop: 18,
+  },
+
+  editBtn: {
+    flex: 1,
+    marginRight: 8,
+    backgroundColor: '#F3F8EE',
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#DCE8C8',
+  },
+
+  editBtnText: {
+    color: COLORS.primaryDark,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+
+  deleteBtn: {
+    flex: 1,
+    marginLeft: 8,
+    backgroundColor: '#E45A4F',
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+
+  deleteBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: COLORS.primaryDark,
+    lineHeight: 36,
+    marginBottom: 16,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  metaText: {
+    fontSize: 13,
+    color: '#7D8A75',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statText: {
+    marginLeft: 6,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#7A8E6F',
+  },
+  statDivider: {
+    width: 1,
+    height: 14,
+    backgroundColor: '#D9E7D0',
+    marginHorizontal: 12,
+  },
+  contentDivider: {
+    height: 1,
+    backgroundColor: '#EEF3E9',
+    marginBottom: 18,
+  },
+  contentText: {
+    fontSize: 16,
+    lineHeight: 26,
+    color: '#335033',
+  },
+
+  actionRow: {
+    flexDirection: 'row',
+    marginTop: 18,
+  },
+  editBtn: {
+    flex: 1,
+    marginRight: 8,
+    backgroundColor: '#F3F8EE',
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#DCE8C8',
+  },
+  editBtnText: {
+    color: COLORS.primaryDark,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  deleteBtn: {
+    flex: 1,
+    marginLeft: 8,
+    backgroundColor: COLORS.danger,
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  deleteBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+
+  secondaryBtn: {
+    marginTop: 14,
+    backgroundColor: '#065809',
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  secondaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+
+  centerLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 100,
+  },
+  loadingText: {
+    marginTop: 12,
+    color: COLORS.muted,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#555',
+    textAlign: 'center',
+  },
+
+  bottomBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 60,
+    backgroundColor: COLORS.warm,
+    borderTopWidth: 1,
+    borderTopColor: '#DCE8C8',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  bottomTabItem: {
+    width: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
