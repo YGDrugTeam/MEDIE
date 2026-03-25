@@ -1,17 +1,13 @@
 import React, { useRef, useEffect } from 'react';
-import { Text, View, TouchableOpacity, Animated, Image } from 'react-native';
+import { Text, View, Animated, Image, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-
+import MASCOT_IMG from '../../assets/MASCOT_IMG.png';
 import { styles } from '../styles/commonStyles';
 
-const MASCOT_IMAGE = 'https://i.postimg.cc/XJQN2c1M/image-4.jpg';
-
-export default function StartScreen({ onStart }) {
-
-  /* 🎯 Animated 값은 컴포넌트 내부에서 생성 */
+export default function StartScreen({ onStart  , user }) {
   const mascotScale = useRef(new Animated.Value(0.8)).current;
 
-  /* 🌱 시작 시 자연스러운 확대 애니메이션 */
+  /* 🌱 마스코트 애니메이션 */
   useEffect(() => {
     Animated.spring(mascotScale, {
       toValue: 1,
@@ -20,37 +16,53 @@ export default function StartScreen({ onStart }) {
     }).start();
   }, []);
 
+  /* ⏱️ 3초 후 자동 이동 */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onStart();
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <View style={styles.startContainer}>
-      <LinearGradient
-        colors={['#E8F5E9', '#FFFDE7']}
-        style={styles.fullGradient}
-      >
-        <View style={styles.mainContent}>
-          {/* 🐣 마스코트 */}
-          <Animated.View style={{ transform: [{ scale: mascotScale }] }}>
-            <Image
-              source={{ uri: MASCOT_IMAGE }}
-              style={styles.mascotImage}
-              resizeMode="contain"
-            />
-          </Animated.View>
+    <TouchableOpacity
+      style={{ flex: 1 }}
+      activeOpacity={1}
+      onPress={onStart} // 👈 터치하면 즉시 이동
+    >
+      <View style={styles.startContainer}>
+        <LinearGradient
+          colors={['#E8F5E9', '#FFFDE7']}
+          style={styles.fullGradient}
+        >
+          <View style={styles.mainContent}>
+            
+            <View style={styles.centerContent}>
+              
+              <Text style={styles.brandTitle}>
+                {user?.name
+                  ? `안녕하세요, ${user.name}님\n오늘도 건강한 하루에요.`
+                  : `안녕하세요,\n오늘도 건강한 하루에요.`}
+              </Text>
 
-          <Text style={styles.brandTitle}>MEDIC HubS</Text>
+              <Animated.View
+                style={[
+                  styles.mascotWrapper,
+                  { transform: [{ scale: mascotScale }] }
+                ]}
+              >
+                <Image
+                  source={MASCOT_IMG}
+                  style={styles.mascotImage}
+                  resizeMode="contain"
+                />
+              </Animated.View>
 
-          <View style={styles.divider} />
-
-          <Text style={styles.slogan}>
-            안녕하세요,{"\n"}
-            오늘도 건강한 하루에요.
-          </Text>
-        </View>
-
-        {/* 🚀 시작 버튼 */}
-        <TouchableOpacity style={styles.premiumBtn} onPress={onStart}>
-          <Text style={styles.premiumBtnText}>분석 시작하기</Text>
-        </TouchableOpacity>
-      </LinearGradient>
-    </View>
+            </View>
+          </View>
+        </LinearGradient>
+      </View>
+    </TouchableOpacity>
   );
 }

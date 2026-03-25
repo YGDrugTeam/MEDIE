@@ -11,12 +11,16 @@ export const styles = StyleSheet.create({
   subContainer: { flex: 1, padding: 25 },
   startContainer: { flex: 1 },
   fullGradient: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 30 },
-  mainContent: { alignItems: 'center', marginBottom: 60 },
+  mainContent: { flex: 1, alignItems: 'center', marginBottom: 60, justifyContent: 'center', alignItems: 'center' },     // 🔥 가로 중앙},
+  centerContent: {
+    alignItems: 'center',
+    marginTop:50
+},
   
   // 🎨 캐릭터
   mascotImage: {
-    width: 180,
-    height: 180,
+    width: 150,
+    height: 150,
     marginBottom: 30,
     borderRadius: 90,
     backgroundColor: '#fff',
@@ -26,8 +30,11 @@ export const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
+  mascotWrapper: {
+  alignItems: 'center',
+},
   
-  brandTitle: { fontSize: 44, letterSpacing: 10, fontWeight: '200', color: '#333' },
+  brandTitle: { fontSize: 24, letterSpacing: 0, fontWeight: 'bold', color: '#333',marginBottom: 16 },
   teamText: { fontSize: 18, fontWeight: '300', color: '#555', marginTop: 8 },
   divider: { width: 40, height: 1, backgroundColor: '#333', marginVertical: 30 },
   slogan: { fontSize: 15, fontWeight: '300', color: '#666', textAlign: 'center', lineHeight: 28 },

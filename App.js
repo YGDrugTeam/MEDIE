@@ -49,7 +49,7 @@ const STORAGE_KEY = 'MY_PILLS_JSON';
 
 export default function App() {
   const [isStarted, setIsStarted] = useState(false);
-  const [appMode, setAppMode] = useState('HOME');
+  const [appMode, setAppMode] = useState('LOGIN');
   const [selectedSupportPost, setSelectedSupportPost] = useState(null);
   const [writeBoardType, setWriteBoardType] = useState('free');
 
@@ -77,6 +77,7 @@ export default function App() {
         console.log("🔔 알림 권한 설정 중...");
         await initNotifications();
 
+<<<<<<< HEAD
         // 2. 마이크 권한 요청 (추가된 기능!)
         console.log("🎤 마이크 권한 요청 중...");
         const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
@@ -84,13 +85,32 @@ export default function App() {
 
       } catch (error) {
         console.error("⚠️ 초기 설정 중 오류 발생:", error);
+=======
+        if (accessToken && userId && userName && userEmail) {
+          setIsLoggedIn(true);
+          setUser({ id: userId, name: userName, email: userEmail });
+          setAppMode('HOME');
+        } else {
+          setIsLoggedIn(false);
+          setUser(null);
+          setAppMode('LOGIN');
+        }
+
+        const { status } = await initNotifications();
+        console.log('🔔 알림 권한:', status);
+        await Notifications.cancelAllScheduledNotificationsAsync();
+      } catch (e) {
+        console.error('초기 설정 실패:', e);
+        setAppMode('LOGIN');
+      } finally {
+        setIsCheckingLogin(false);
+>>>>>>> 916bc93 (화면 수정)
       }
     };
 
     setup();
   }, []);
 
-  // 테스트용 서버 확인
   useEffect(() => {
     const testServer = async () => {
       try {
@@ -192,13 +212,47 @@ export default function App() {
   useBackHandler({ appMode, setAppMode, showResult });
 
   if (!isStarted) {
-    return <StartScreen onStart={() => { setIsStarted(true); setAppMode('HOME'); }} />;
+    return (
+      <StartScreen
+        onStart={() => {
+          setIsStarted(true);
+          setAppMode(isLoggedIn ? 'HOME' : 'LOGIN');
+        }}
+        user={isLoggedIn ? user : null}
+        
+      />
+    );
   }
 
   if (isCheckingLogin) {
     return (
       <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#4A90E2" />
+      </SafeAreaView>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          {appMode === 'REGISTER' ? (
+            <RegisterScreen
+              setAppMode={setAppMode}
+              setIsLoggedIn={setIsLoggedIn}
+              setUser={setUser}
+            />
+          ) : (
+            <LoginScreen
+              setAppMode={setAppMode}
+              setIsLoggedIn={setIsLoggedIn}
+              setUser={setUser}
+            />
+          )}
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -228,10 +282,7 @@ export default function App() {
                     setUser={setUser}
                   />
                 );
-              case 'LOGIN':
-                return <LoginScreen setAppMode={setAppMode} setIsLoggedIn={setIsLoggedIn} setUser={setUser} />;
-              case 'REGISTER':
-                return <RegisterScreen setAppMode={setAppMode} setIsLoggedIn={setIsLoggedIn} setUser={setUser} />;
+
               case 'SCAN':
                 return (
                   <ScanScreen
@@ -246,6 +297,7 @@ export default function App() {
                     setAppMode={setAppMode}
                   />
                 );
+
               case 'MY_PILL':
                 return (
                   <MyPillScreen
@@ -255,6 +307,7 @@ export default function App() {
                     onDeletePill={deletePill}
                   />
                 );
+
               case 'MAP':
                 return (
                   <MapScreen
@@ -266,6 +319,7 @@ export default function App() {
                     openKakaoMapDetail={openKakaoMapDetail}
                   />
                 );
+
               case 'ALARM':
                 return (
                   <AlarmScreen
@@ -276,10 +330,13 @@ export default function App() {
                     deletePillAlarm={deletePillAlarm}
                   />
                 );
+
               case 'HISTORY':
                 return <HistoryScreen setAppMode={setAppMode} />;
+
               case 'SEARCH_PILL':
                 return <SearchPillScreen setAppMode={setAppMode} />;
+
               case 'COMMUNITY':
                 return (
                   <CommunityScreen
@@ -288,6 +345,7 @@ export default function App() {
                     setWriteBoardType={setWriteBoardType}
                   />
                 );
+
               case 'BOARD':
                 return (
                   <BoardScreen
@@ -297,6 +355,7 @@ export default function App() {
                     onBack={handleBackToCommunity}
                   />
                 );
+
               case 'SUPPORT':
                 return (
                   <SupportMainScreen
@@ -307,6 +366,7 @@ export default function App() {
                     }}
                   />
                 );
+
               case 'SUPPORT_DETAIL':
                 return (
                   <SupportListScreen
@@ -315,10 +375,13 @@ export default function App() {
                     setAppMode={setAppMode}
                   />
                 );
+
               case 'SUPPORT_WRITE':
                 return <SupportWriteScreen setAppMode={setAppMode} />;
+
               case 'WRITE_BOARD':
                 return <WriteBoardScreen setAppMode={setAppMode} writeBoardType={writeBoardType} />;
+
               default:
                 return (
                   <HomeScreen
