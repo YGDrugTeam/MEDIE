@@ -13,14 +13,14 @@ import { ExpoSpeechRecognitionModule } from "expo-speech-recognition";
 import { initNotifications } from './src/services/notificationInit';
 import * as Notifications from 'expo-notifications';
 import { API_BASE } from './src/api/api';
- 
+
 /* styles */
 import { styles } from './src/styles/commonStyles';
- 
+
 /* components */
 import HomeFloatingButton from './src/components/HomeFloatingButton';
 import { MedieChatView } from './src/components/MedieChatView';
- 
+
 /* screens */
 import StartScreen from './src/screens/StartScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -38,58 +38,58 @@ import WriteBoardScreen from './src/screens/WriteBoardScreen';
 import SupportMainScreen from './src/screens/SupportMainScreen';
 import SupportListScreen from './src/screens/SupportListScreen';
 import SupportWriteScreen from './src/screens/SupportWriteScreen';
- 
+
 /* hooks */
 import useCameraScan from './src/hooks/useCameraScan';
 import usePharmacySearch from './src/hooks/usePharmacySearch';
 import useBackHandler from './src/hooks/useBackHandler';
 import useMyPills from './src/hooks/useMyPills';
- 
+
 const STORAGE_KEY = 'MY_PILLS_JSON';
- 
+
 export default function App() {
   const [isStarted, setIsStarted] = useState(false);
   const [appMode, setAppMode] = useState('LOGIN');
   const [selectedSupportPost, setSelectedSupportPost] = useState(null);
   const [writeBoardType, setWriteBoardType] = useState('free');
- 
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [isCheckingLogin, setIsCheckingLogin] = useState(true);
- 
+
   const [selectedPost, setSelectedPost] = useState(null);
   const [selectedBoardTitle, setSelectedBoardTitle] = useState('자유게시판');
- 
+
   const handleOpenBoard = (post, boardTitle = '자유게시판') => {
     setSelectedPost(post);
     setSelectedBoardTitle(boardTitle);
     setAppMode('BOARD');
   };
- 
+
   const handleBackToCommunity = () => {
     setAppMode('COMMUNITY');
   };
- 
+
   useEffect(() => {
     const setup = async () => {
       try {
         setIsCheckingLogin(true);
- 
+
         // 1. 알림 권한 설정
         console.log("🔔 알림 권한 설정 중...");
         await initNotifications();
- 
+
         // 2. 마이크 권한 요청
         console.log("🎤 마이크 권한 요청 중...");
         const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
         console.log("🎤 마이크 권한 최종 상태:", result.granted);
- 
+
         // 3. 로그인 상태 체크 (SecureStore에서 가져오기)
         const accessToken = await SecureStore.getItemAsync('accessToken');
         const userId = await SecureStore.getItemAsync('userId');
         const userName = await SecureStore.getItemAsync('userName');
         const userEmail = await SecureStore.getItemAsync('userEmail');
- 
+
         if (accessToken && userId) {
           setIsLoggedIn(true);
           setUser({ id: userId, name: userName, email: userEmail });
@@ -105,10 +105,10 @@ export default function App() {
         setIsCheckingLogin(false);
       }
     };
- 
+
     setup();
   }, []);
- 
+
   useEffect(() => {
     const testServer = async () => {
       try {
@@ -119,10 +119,10 @@ export default function App() {
         console.log('서버 연결 실패', error);
       }
     };
- 
+
     testServer();
   }, []);
- 
+
   const {
     myPills,
     saveMyPills,
@@ -132,12 +132,12 @@ export default function App() {
     deletePillAlarm,
     deletePill,
   } = useMyPills({ STORAGE_KEY });
- 
+
   const goAlarmFromPill = async (pillId) => {
     await ensurePillSchedule(pillId);
     setAppMode('ALARM');
   };
- 
+
   const registerPillFromAiResponse = useCallback(
     async (aiResponse) => {
       const lines = aiResponse.split('\n');
@@ -152,7 +152,7 @@ export default function App() {
           ? lines.slice(usageIndex + 1, warningIndex).join('\n')
           : '';
       const warning = warningIndex >= 0 ? lines.slice(warningIndex + 1).join('\n') : '';
- 
+
       const newPill = {
         id: Date.now().toString(),
         name: pillName,
@@ -164,7 +164,7 @@ export default function App() {
         notificationId: null,
         createdAt: Date.now(),
       };
- 
+
       const updated = [newPill, ...(myPills ?? [])];
       try {
         await saveMyPills(updated);
@@ -173,7 +173,7 @@ export default function App() {
         Alert.alert('저장 오류', '내 복용약 저장에 실패했습니다.');
         return;
       }
- 
+
       Alert.alert('등록 완료', '내 복용약으로 등록되었습니다.', [
         {
           text: '확인',
@@ -185,7 +185,7 @@ export default function App() {
     },
     [myPills, saveMyPills]
   );
- 
+
   const {
     cameraRef,
     isAnalyzing,
@@ -198,7 +198,7 @@ export default function App() {
   } = useCameraScan({
     onRegisterPill: registerPillFromAiResponse,
   });
- 
+
   const {
     nearbyPharmacies,
     isSearchingMap,
@@ -206,69 +206,69 @@ export default function App() {
     openKakaoMapDetail,
     makePhoneCall,
   } = usePharmacySearch();
- 
+
   useBackHandler({ appMode, setAppMode, showResult });
- 
+
   if (!isStarted) {
     return (
-<StartScreen
+      <StartScreen
         onStart={() => {
           setIsStarted(true);
           setAppMode(isLoggedIn ? 'HOME' : 'LOGIN');
         }}
         user={isLoggedIn ? user : null}
- 
+
       />
     );
   }
- 
+
   if (isCheckingLogin) {
     return (
-<SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-<ActivityIndicator size="large" color="#4A90E2" />
-</SafeAreaView>
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#4A90E2" />
+      </SafeAreaView>
     );
   }
- 
+
   if (!isLoggedIn) {
     return (
-<SafeAreaView style={styles.safeArea}>
-<KeyboardAvoidingView
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}
->
+        >
           {appMode === 'REGISTER' ? (
-<RegisterScreen
+            <RegisterScreen
               setAppMode={setAppMode}
               setIsLoggedIn={setIsLoggedIn}
               setUser={setUser}
             />
           ) : (
-<LoginScreen
+            <LoginScreen
               setAppMode={setAppMode}
               setIsLoggedIn={setIsLoggedIn}
               setUser={setUser}
             />
           )}
-</KeyboardAvoidingView>
-</SafeAreaView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     );
   }
- 
+
   return (
-<SafeAreaView style={styles.safeArea}>
-<KeyboardAvoidingView
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
->
+      >
         {appMode === 'HOME' && <HomeFloatingButton onPress={() => setAppMode('SCAN')} />}
- 
+
         <View style={{ flex: 1 }}>
           {(() => {
             switch (appMode) {
               case 'HOME':
                 return (
-<HomeScreen
+                  <HomeScreen
                     setAppMode={setAppMode}
                     onPressMap={() => {
                       setAppMode('MAP');
@@ -278,12 +278,14 @@ export default function App() {
                     user={user}
                     setIsLoggedIn={setIsLoggedIn}
                     setUser={setUser}
+                    myPills={myPills}
+                    onCompleteNextDose={completeNextDose}
                   />
                 );
- 
+
               case 'SCAN':
                 return (
-<ScanScreen
+                  <ScanScreen
                     cameraRef={cameraRef}
                     isAnalyzing={isAnalyzing}
                     showResult={showResult}
@@ -295,20 +297,20 @@ export default function App() {
                     setAppMode={setAppMode}
                   />
                 );
- 
+
               case 'MY_PILL':
                 return (
-<MyPillScreen
+                  <MyPillScreen
                     setAppMode={setAppMode}
                     myPills={myPills}
                     onToggleAlarm={goAlarmFromPill}
                     onDeletePill={deletePill}
                   />
                 );
- 
+
               case 'MAP':
                 return (
-<MapScreen
+                  <MapScreen
                     setAppMode={setAppMode}
                     nearbyPharmacies={nearbyPharmacies}
                     findNearbyPharmacies={findNearbyPharmacies}
@@ -317,10 +319,10 @@ export default function App() {
                     openKakaoMapDetail={openKakaoMapDetail}
                   />
                 );
- 
+
               case 'ALARM':
                 return (
-<AlarmScreen
+                  <AlarmScreen
                     myPills={myPills}
                     setAppMode={setAppMode}
                     togglePillAlarm={togglePillAlarm}
@@ -328,35 +330,35 @@ export default function App() {
                     deletePillAlarm={deletePillAlarm}
                   />
                 );
- 
+
               case 'HISTORY':
-                return <HistoryScreen setAppMode={setAppMode} />;
- 
+                return <HistoryScreen setAppMode={setAppMode} pillHistory={pillHistory} />;
+
               case 'SEARCH_PILL':
                 return <SearchPillScreen setAppMode={setAppMode} />;
- 
+
               case 'COMMUNITY':
                 return (
-<CommunityScreen
+                  <CommunityScreen
                     setAppMode={setAppMode}
                     onOpenBoard={handleOpenBoard}
                     setWriteBoardType={setWriteBoardType}
                   />
                 );
- 
+
               case 'BOARD':
                 return (
-<BoardScreen
+                  <BoardScreen
                     setAppMode={setAppMode}
                     post={selectedPost}
                     boardTitle={selectedBoardTitle}
                     onBack={handleBackToCommunity}
                   />
                 );
- 
+
               case 'SUPPORT':
                 return (
-<SupportMainScreen
+                  <SupportMainScreen
                     setAppMode={setAppMode}
                     onOpenSupport={(item) => {
                       setSelectedSupportPost(item);
@@ -364,25 +366,25 @@ export default function App() {
                     }}
                   />
                 );
- 
+
               case 'SUPPORT_DETAIL':
                 return (
-<SupportListScreen
+                  <SupportListScreen
                     post={selectedSupportPost}
                     onBack={() => setAppMode('SUPPORT')}
                     setAppMode={setAppMode}
                   />
                 );
- 
+
               case 'SUPPORT_WRITE':
                 return <SupportWriteScreen setAppMode={setAppMode} />;
- 
+
               case 'WRITE_BOARD':
                 return <WriteBoardScreen setAppMode={setAppMode} writeBoardType={writeBoardType} />;
- 
+
               default:
                 return (
-<HomeScreen
+                  <HomeScreen
                     setAppMode={setAppMode}
                     isLoggedIn={isLoggedIn}
                     user={user}
@@ -392,10 +394,10 @@ export default function App() {
                 );
             }
           })()}
-</View>
- 
+        </View>
+
         <MedieChatView appMode={appMode} setAppMode={setAppMode} />
-</KeyboardAvoidingView>
-</SafeAreaView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
