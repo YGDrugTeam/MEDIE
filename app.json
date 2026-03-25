@@ -22,7 +22,7 @@
       [
         "@react-native-seoul/kakao-login",
         {
-          "kakaoAppKey": "지현님의_네이티브_앱_키_숫자만"
+          "kakaoAppKey": "a0009540a1ff9149700c5d29557791d8"
         }
       ],
       [
@@ -45,13 +45,16 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
-              "kakao지현님의_네이티브_앱_키_숫자만"
+              "a0009540a1ff9149700c5d29557791d8"
             ]
           }
         ],
         "NSLocationWhenInUseUsageDescription": "내 주변 당번약국을 찾기 위해 위치를 사용합니다.",
         "NSSpeechRecognitionUsageDescription": "메디가 당신의 음성을 텍스트로 변환하기 위해 음성 인식 권한이 필요합니다.",
-        "NSMicrophoneUsageDescription": "메디가 당신의 목소리를 듣고 대답하기 위해 마이크 권한이 필요합니다."
+        "NSMicrophoneUsageDescription": "메디가 당신의 목소리를 듣고 대답하기 위해 마이크 권한이 필요합니다.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       }
     },
     "android": {
