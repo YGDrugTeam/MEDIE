@@ -1,4 +1,4 @@
-const API_BASE = "https://172.169.59.206";
+const API_BASE = "http://20.106.40.121";
 
 export const createSupportTicket = async (title, content, author) => {
   const res = await fetch(`${API_BASE}/support/`, {

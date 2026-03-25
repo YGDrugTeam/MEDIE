@@ -11,7 +11,7 @@ import {
 
 import { styles } from '../styles/commonStyles';
 
-const BOARD_API_BASE = 'https:/172.169.59.206';
+const BOARD_API_BASE = 'http://20.106.40.121';
 
 export default function WriteBoardScreen({
   setAppMode,

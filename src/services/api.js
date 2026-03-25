@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 export const API_URL =
-  'https://172.169.59.206';
+  'http://20.106.40.121';
 
 export const analyzePill = async (photoUri) => {
   const formData = new FormData();

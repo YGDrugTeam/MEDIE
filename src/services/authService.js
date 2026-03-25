@@ -6,7 +6,7 @@ import {
   getProfile,
 } from '@react-native-seoul/kakao-login';
 
-const API_BASE = 'https://172.169.59.206';
+const API_BASE = 'http://20.106.40.121';
 
 const STORAGE_KEYS = {
   ACCESS_TOKEN: 'ACCESS_TOKEN',
