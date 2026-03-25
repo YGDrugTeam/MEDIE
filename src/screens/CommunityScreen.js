@@ -17,7 +17,7 @@ import {
 import { styles } from '../styles/commonStyles';
 import BackToMenuBtn from '../components/BackToMenuBtn';
 
-const BOARD_API_BASE = 'https://20.106.40.121';
+const BOARD_API_BASE = 'https://172.169.59.206';
 
 export default function CommunityScreen({
   setAppMode,

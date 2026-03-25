@@ -13,7 +13,7 @@ function normalizeToArray(data) {
 }
 
 export default function usePillSearch({
-  apiBaseUrl = 'https://20.106.40.121', // 예: "https://medichubs-backend.azurewebsites.net"
+  apiBaseUrl = 'https://172.169.59.206', // 예: "https://medichubs-backend.azurewebsites.net"
   endpoint = '/drugs/search',
 } = {}) {
   const [query, setQuery] = useState('');

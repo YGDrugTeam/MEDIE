@@ -14,7 +14,7 @@ import {
 import * as SecureStore from 'expo-secure-store';
 import { loginWithKakao } from '../services/kakaoAuthService';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://20.106.40.121';
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://172.169.59.206';
 
 function getErrorMessage(data, fallback = '로그인에 실패했습니다.') {
   if (!data) return fallback;

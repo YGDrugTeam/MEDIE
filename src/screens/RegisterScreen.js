@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-
 import {
   Alert,
   SafeAreaView,
@@ -46,6 +45,8 @@ export default function RegisterScreen({ setAppMode, setIsLoggedIn, setUser }) {
       setIsLoggedIn(true);
       setUser(result.data?.user || null);
       setAppMode('HOME');
+    } catch (error) {
+      Alert.alert('오류', '회원가입 중 문제가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -53,75 +54,73 @@ export default function RegisterScreen({ setAppMode, setIsLoggedIn, setUser }) {
 
   return (
     <LinearGradient
-    colors={['#E8F5E9', '#FFFDE7']} // 원하는 색
-    style={{ flex: 1 }}
-  >
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>
-      <View style={styles.inner}>
-        <Text style={styles.title}>회원가입</Text>
+      colors={['#E8F5E9', '#FFFDE7']}
+      style={{ flex: 1 }}
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>
+        <View style={styles.inner}>
+          <Text style={styles.title}>회원가입</Text>
 
-        <Text style={styles.label}>이메일</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="이메일을 입력하세요"
-          placeholderTextColor="#999"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
+          <Text style={styles.label}>이메일</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="이메일을 입력하세요"
+            placeholderTextColor="#999"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
 
-        <Text style={styles.label}>닉네임</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="닉네임을 입력하세요"
-          placeholderTextColor="#999"
-          value={nickname}
-          onChangeText={setNickname}
-        />
+          <Text style={styles.label}>닉네임</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="닉네임을 입력하세요"
+            placeholderTextColor="#999"
+            value={nickname}
+            onChangeText={setNickname}
+          />
 
-        <Text style={styles.label}>비밀번호</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="비밀번호를 입력하세요"
-          placeholderTextColor="#999"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+          <Text style={styles.label}>비밀번호</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="비밀번호를 입력하세요"
+            placeholderTextColor="#999"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
 
-        <Text style={styles.label}>비밀번호 확인</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="비밀번호를 다시 입력하세요"
-          placeholderTextColor="#999"
-          secureTextEntry
-          value={passwordConfirm}
-          onChangeText={setPasswordConfirm}
-        />
+          <Text style={styles.label}>비밀번호 확인</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="비밀번호를 다시 입력하세요"
+            placeholderTextColor="#999"
+            secureTextEntry
+            value={passwordConfirm}
+            onChangeText={setPasswordConfirm}
+          />
 
-        <TouchableOpacity onPress={() => setAppMode('LOGIN')}>
-          <Text style={styles.link}>로그인 화면으로 돌아가기</Text>
-        </TouchableOpacity>
+          <TouchableOpacity onPress={() => setAppMode('LOGIN')}>
+            <Text style={styles.link}>로그인 화면으로 돌아가기</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleRegister}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? '처리 중...' : '회원가입'}
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? '처리 중...' : '회원가입'}
+            </Text>
+          </TouchableOpacity>
 
-
-
-        <TouchableOpacity onPress={() => setAppMode('HOME')}>
-          <Text style={styles.cancelLink}>취소</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
-  </LinearGradient>
+          <TouchableOpacity onPress={() => setAppMode('LOGIN')}>
+            <Text style={styles.cancelLink}>취소</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
@@ -158,7 +157,7 @@ const styles = StyleSheet.create({
   },
   button: {
     height: 79,
-    width:88,
+    width: 88,
     borderRadius: 100,
     backgroundColor: '#10B981',
     justifyContent: 'center',
@@ -175,7 +174,7 @@ const styles = StyleSheet.create({
   link: {
     textAlign: 'center',
     color: '#000000',
-    marginBottom:6,
+    marginBottom: 6,
     fontWeight: '600',
   },
   cancelLink: {
