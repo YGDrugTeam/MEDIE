@@ -1,4 +1,3 @@
-import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -15,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import usePillSearch from '../hooks/usePillSearch';
+import React, { useMemo, useState, useEffect } from 'react';
 
 const COLORS = {
   background: '#FFFFFF',
@@ -39,7 +39,15 @@ const createMockPill = (pillName) => ({
   confidence: '89.8%',
 });
 
-export default function SearchPillScreen({ setAppMode }) {
+export default function SearchPillScreen({ setAppMode, initialKeyword, onSearch }) {
+  const [keyword, setKeyword] = useState(initialKeyword || '');
+
+  useEffect(() => {
+    if (initialKeyword) {
+      handleSearch(initialKeyword);
+      if (onSearch) onSearch();
+    }
+  }, [initialKeyword]);
   const apiBaseUrl = useMemo(() => 'http://20.106.40.121', []);
 
   const {
@@ -59,26 +67,33 @@ export default function SearchPillScreen({ setAppMode }) {
 
   const hasSearched = !!finalSelected;
 
-  const handleSearch = () => {
-    if (!query?.trim()) return;
+  const handleSearch = (searchQuery) => {
+    const q = searchQuery || query;
+    if (!q?.trim()) return;
 
     Keyboard.dismiss();
 
     if (DEV_MOCK_PILL_SEARCH) {
       setMockSearching(true);
-
       setTimeout(() => {
-        const fakeItem = createMockPill(query.trim());
+        const fakeItem = createMockPill(q.trim());
         setMockSelected(fakeItem);
         setMockSearching(false);
       }, 350);
-
       return;
     }
 
     if (!canSearch || isSearching) return;
     search();
   };
+
+  useEffect(() => {
+    if (initialKeyword) {
+      setQuery(initialKeyword);
+      handleSearch(initialKeyword);
+      if (onSearch) onSearch();
+    }
+  }, [initialKeyword]);
 
   const handleResetMock = () => {
     if (DEV_MOCK_PILL_SEARCH) {
