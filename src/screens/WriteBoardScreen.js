@@ -26,10 +26,12 @@ const COLORS = {
 
 export default function WriteBoardScreen({
   setAppMode,
-  writeBoardType = 'free',
-  editingPost = null,
+  writeBoardType,
+  editingPost,
   onDone,
   onCancel,
+  voiceDraft,
+  onDraftUsed,
 }) {
   const isEditMode = !!editingPost?.id;
 
@@ -40,6 +42,7 @@ export default function WriteBoardScreen({
 
   const currentBoardType = writeBoardType || editingPost?.boardType || 'free';
 
+  // ✅ 수정 모드일 때 기존 내용 채우기
   useEffect(() => {
     if (editingPost) {
       setTitle(editingPost.title || '');
@@ -52,38 +55,31 @@ export default function WriteBoardScreen({
     }
   }, [editingPost]);
 
+  // ✅ 매디 음성 초안 자동 입력
+  useEffect(() => {
+    if (voiceDraft) {
+      setTitle(voiceDraft.title || '');
+      setContent(voiceDraft.content || '');
+      if (onDraftUsed) onDraftUsed();
+    }
+  }, [voiceDraft]);
+
   const boardTitle = useMemo(() => {
     const modeLabel = isEditMode ? '글 수정' : '글쓰기';
-
     switch (currentBoardType) {
-      case 'review':
-        return `복용후기 ${modeLabel}`;
+      case 'review': return `복용후기 ${modeLabel}`;
       case 'question':
-      case 'med_question':
-        return `복약질문 ${modeLabel}`;
-      case 'notice':
-        return `공지사항 ${modeLabel}`;
+      case 'med_question': return `복약질문 ${modeLabel}`;
+      case 'notice': return `공지사항 ${modeLabel}`;
       case 'free':
-      default:
-        return `자유수다 ${modeLabel}`;
+      default: return `자유수다 ${modeLabel}`;
     }
   }, [currentBoardType, isEditMode]);
 
   const handleSubmit = async () => {
-    if (!title.trim()) {
-      Alert.alert('입력 확인', '제목을 입력해주세요.');
-      return;
-    }
-
-    if (!author.trim()) {
-      Alert.alert('입력 확인', '작성자를 입력해주세요.');
-      return;
-    }
-
-    if (!content.trim()) {
-      Alert.alert('입력 확인', '내용을 입력해주세요.');
-      return;
-    }
+    if (!title.trim()) { Alert.alert('입력 확인', '제목을 입력해주세요.'); return; }
+    if (!author.trim()) { Alert.alert('입력 확인', '작성자를 입력해주세요.'); return; }
+    if (!content.trim()) { Alert.alert('입력 확인', '내용을 입력해주세요.'); return; }
 
     try {
       setIsSubmitting(true);
@@ -101,47 +97,20 @@ export default function WriteBoardScreen({
 
       if (isEditMode) {
         const updateUrl = `${BOARD_API_BASE}/boards/${editingPost.id}`;
-
-        // PUT 먼저 시도, 실패 시 PATCH fallback
         res = await fetch(updateUrl, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-
         text = await res.text();
 
-        if (!res.ok) {
-          try {
-            const putErrorJson = JSON.parse(text);
-            const detailMessage =
-              typeof putErrorJson?.detail === 'string'
-                ? putErrorJson.detail
-                : JSON.stringify(putErrorJson?.detail || putErrorJson);
-
-            // 405/404/500 류면 PATCH 재시도
-            if ([404, 405, 500].includes(res.status)) {
-              res = await fetch(updateUrl, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-              });
-              text = await res.text();
-            } else {
-              throw new Error(detailMessage || '게시글 수정 실패');
-            }
-          } catch (e) {
-            if ([404, 405, 500].includes(res.status)) {
-              res = await fetch(updateUrl, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-              });
-              text = await res.text();
-            } else {
-              throw e;
-            }
-          }
+        if (!res.ok && [404, 405, 500].includes(res.status)) {
+          res = await fetch(updateUrl, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          text = await res.text();
         }
       } else {
         res = await fetch(`${BOARD_API_BASE}/boards/`, {
@@ -149,14 +118,12 @@ export default function WriteBoardScreen({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-
         text = await res.text();
       }
 
       try {
         data = JSON.parse(text);
       } catch (err) {
-        console.error('등록/수정 응답 원문:', text);
         throw new Error('서버가 JSON이 아닌 응답을 반환했습니다.');
       }
 
@@ -165,7 +132,6 @@ export default function WriteBoardScreen({
           typeof data?.detail === 'string'
             ? data.detail
             : JSON.stringify(data?.detail || data);
-
         throw new Error(detailMessage || (isEditMode ? '게시글 수정 실패' : '게시글 등록 실패'));
       }
 
@@ -173,11 +139,8 @@ export default function WriteBoardScreen({
         {
           text: '확인',
           onPress: () => {
-            if (typeof onDone === 'function') {
-              onDone(data);
-            } else {
-              setAppMode('COMMUNITY');
-            }
+            if (typeof onDone === 'function') onDone(data);
+            else setAppMode('COMMUNITY');
           },
         },
       ]);
@@ -190,47 +153,25 @@ export default function WriteBoardScreen({
   };
 
   const handleCancel = () => {
-    if (typeof onCancel === 'function') {
-      onCancel();
-      return;
-    }
+    if (typeof onCancel === 'function') { onCancel(); return; }
     setAppMode('COMMUNITY');
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* 상단 */}
         <View style={styles.header}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleCancel}
-            style={styles.backButton}
-          >
+          <TouchableOpacity activeOpacity={0.8} onPress={handleCancel} style={styles.backButton}>
             <Ionicons name="chevron-back" size={34} color={COLORS.secondary} />
           </TouchableOpacity>
-
           <Text style={styles.headerTitle}>커뮤니티</Text>
-
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setAppMode('SCAN')}
-            style={styles.scanButton}
-          >
-            <Ionicons
-              name="camera-outline"
-              size={18}
-              color={COLORS.secondary}
-              style={{ marginRight: 6 }}
-            />
+          <TouchableOpacity activeOpacity={0.8} onPress={() => setAppMode('SCAN')} style={styles.scanButton}>
+            <Ionicons name="camera-outline" size={18} color={COLORS.secondary} style={{ marginRight: 6 }} />
             <Text style={styles.scanButtonText}>약 스캔</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           <Text style={styles.pageTitle}>{boardTitle}</Text>
 
           <View style={styles.formCard}>
@@ -272,20 +213,12 @@ export default function WriteBoardScreen({
           >
             <Text style={styles.primaryBtnText}>
               {isSubmitting
-                ? isEditMode
-                  ? '수정 중...'
-                  : '등록 중...'
-                : isEditMode
-                  ? '게시글 수정'
-                  : '게시글 등록'}
+                ? isEditMode ? '수정 중...' : '등록 중...'
+                : isEditMode ? '게시글 수정' : '게시글 등록'}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={handleCancel}
-            style={styles.secondaryBtn}
-          >
+          <TouchableOpacity activeOpacity={0.85} onPress={handleCancel} style={styles.secondaryBtn}>
             <Text style={styles.secondaryBtnText}>취소</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -314,151 +247,22 @@ export default function WriteBoardScreen({
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    paddingHorizontal: 20,
-    paddingTop: 6,
-  },
-
-  header: {
-    height: 72,
-    justifyContent: 'center',
-    position: 'relative',
-    marginBottom: 4,
-  },
-  backButton: {
-    position: 'absolute',
-    left: 0,
-    top: 14,
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
-  headerTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 14,
-    textAlign: 'center',
-    fontSize: 30,
-    fontWeight: '800',
-    color: COLORS.primaryDark,
-  },
-  scanButton: {
-    position: 'absolute',
-    right: 0,
-    top: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: COLORS.secondary,
-    borderRadius: 18,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    zIndex: 2,
-  },
-  scanButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.primaryDark,
-  },
-
-  scrollContent: {
-    paddingTop: 10,
-    paddingBottom: 140,
-  },
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: COLORS.primaryDark,
-    marginBottom: 14,
-  },
-
-  formCard: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 24,
-    padding: 18,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  label: {
-    fontSize: 14,
-    color: '#4F5F4A',
-    fontWeight: '700',
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  input: {
-    backgroundColor: '#F9FBF7',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    borderWidth: 1,
-    borderColor: '#DFEADB',
-    color: '#111',
-    marginBottom: 12,
-  },
-  textArea: {
-    backgroundColor: '#F9FBF7',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    minHeight: 200,
-    borderWidth: 1,
-    borderColor: '#DFEADB',
-    color: '#111',
-    marginBottom: 8,
-  },
-
-  primaryBtn: {
-    marginTop: 18,
-    backgroundColor: COLORS.secondary,
-    borderRadius: 16,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  primaryBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 15,
-  },
-
-  secondaryBtn: {
-    marginTop: 12,
-    backgroundColor: '#065809',
-    borderRadius: 16,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  secondaryBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 15,
-  },
-
-  bottomBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 60,
-    backgroundColor: COLORS.warm,
-    borderTopWidth: 1,
-    borderTopColor: '#DCE8C8',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  bottomTabItem: {
-    width: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  container: { flex: 1, backgroundColor: COLORS.background, paddingHorizontal: 20, paddingTop: 6 },
+  header: { height: 72, justifyContent: 'center', position: 'relative', marginBottom: 4 },
+  backButton: { position: 'absolute', left: 0, top: 14, width: 44, height: 44, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  headerTitle: { position: 'absolute', left: 0, right: 0, top: 14, textAlign: 'center', fontSize: 30, fontWeight: '800', color: COLORS.primaryDark },
+  scanButton: { position: 'absolute', right: 0, top: 14, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: COLORS.secondary, borderRadius: 18, paddingHorizontal: 18, paddingVertical: 10, zIndex: 2 },
+  scanButtonText: { fontSize: 16, fontWeight: '700', color: COLORS.primaryDark },
+  scrollContent: { paddingTop: 10, paddingBottom: 140 },
+  pageTitle: { fontSize: 24, fontWeight: '800', color: COLORS.primaryDark, marginBottom: 14 },
+  formCard: { backgroundColor: COLORS.cardBg, borderRadius: 24, padding: 18, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
+  label: { fontSize: 14, color: '#4F5F4A', fontWeight: '700', marginBottom: 8, marginTop: 4 },
+  input: { backgroundColor: '#F9FBF7', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, borderWidth: 1, borderColor: '#DFEADB', color: '#111', marginBottom: 12 },
+  textArea: { backgroundColor: '#F9FBF7', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, minHeight: 200, borderWidth: 1, borderColor: '#DFEADB', color: '#111', marginBottom: 8 },
+  primaryBtn: { marginTop: 18, backgroundColor: COLORS.secondary, borderRadius: 16, paddingVertical: 15, alignItems: 'center' },
+  primaryBtnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15 },
+  secondaryBtn: { marginTop: 12, backgroundColor: '#065809', borderRadius: 16, paddingVertical: 15, alignItems: 'center' },
+  secondaryBtnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15 },
+  bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 60, backgroundColor: COLORS.warm, borderTopWidth: 1, borderTopColor: '#DCE8C8', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
+  bottomTabItem: { width: 48, alignItems: 'center', justifyContent: 'center' },
 });

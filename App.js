@@ -63,6 +63,8 @@ export default function App() {
   const [selectedPost, setSelectedPost] = useState(null);
   const [selectedBoardTitle, setSelectedBoardTitle] = useState('자유게시판');
   const [pillHistory, setPillHistory] = useState([]);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [voicePostDraft, setVoicePostDraft] = useState(null);
 
   const [selectedPill, setSelectedPill] = useState(null);
 
@@ -416,7 +418,13 @@ export default function App() {
               return <HistoryScreen setAppMode={setAppMode} />;
 
             case 'SEARCH_PILL':
-              return <SearchPillScreen setAppMode={setAppMode} />;
+              return (
+                <SearchPillScreen
+                  setAppMode={setAppMode}
+                  initialKeyword={searchKeyword}  // ← 추가
+                  onSearch={() => setSearchKeyword('')}
+                />
+              );
 
             case 'COMMUNITY':
               return (
@@ -497,6 +505,8 @@ export default function App() {
                 <WriteBoardScreen
                   setAppMode={setAppMode}
                   writeBoardType={writeBoardType}
+                  voiceDraft={voicePostDraft}  // ← 추가
+                  onDraftUsed={() => setVoicePostDraft(null)}
                 />
               );
 
@@ -520,6 +530,8 @@ export default function App() {
         onCompleteNextDose={completeNextDose}
         onChangeAlarmTime={changePillAlarmTime}
         onToggleAlarm={togglePillAlarm}
+        onSearchDrug={(keyword) => setSearchKeyword(keyword)}
+        onWritePost={(draft) => setVoicePostDraft(draft)}
         myPills={myPills}
       />
     </SafeAreaView>

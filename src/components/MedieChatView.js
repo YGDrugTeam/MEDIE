@@ -30,7 +30,9 @@ export const MedieChatView = ({
     setAppMode,
     onCompleteNextDose,
     onChangeAlarmTime,
-    onToggleAlarm,    // ← 추가
+    onToggleAlarm,
+    onSearchDrug,   // ← 추가
+    onWritePost,   // ← 추가
     myPills = [],
 }) => {
     const [isThinking, setIsThinking] = useState(false);
@@ -353,7 +355,28 @@ export const MedieChatView = ({
                 }
             }
 
-            if (data.show_confirmation) setShowConfirmButtons(true);
+            // ✅ 약 검색 실행
+            if (data.command === 'SEARCH_DRUG' && data.params?.keyword) {
+                console.log("🔍 약 검색:", data.params.keyword);
+                setTimeout(() => {
+                    setAppMode('SEARCH_PILL');
+                    // SearchPillScreen에 keyword 전달
+                    if (onSearchDrug) onSearchDrug(data.params.keyword);
+                }, 400);
+            }
+
+            // ✅ 게시글 작성 (Human in the Loop)
+            if (data.command === 'WRITE_POST' && data.params?.title) {
+                console.log("✍️ 게시글 작성:", data.params);
+                if (onWritePost) {
+                    onWritePost({
+                        title: data.params.title,
+                        content: data.params.content,
+                        board_type: data.params.board_type
+                    });
+                }
+                setTimeout(() => setAppMode('WRITE_BOARD'), 400);
+            }
 
             speakMedie(data.reply);
 
