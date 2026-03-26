@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -39,7 +39,8 @@ const createMockPill = (pillName) => ({
   confidence: '89.8%',
 });
 
-export default function SearchPillScreen({ setAppMode }) {
+export default function SearchPillScreen({ setAppMode, initialKeyword, onSearch }) {
+
   const apiBaseUrl = useMemo(() => 'http://20.106.40.121', []);
 
   const {
@@ -59,8 +60,9 @@ export default function SearchPillScreen({ setAppMode }) {
 
   const hasSearched = !!finalSelected;
 
-  const handleSearch = () => {
-    if (!query?.trim()) return;
+  const handleSearch = (searchQuery) => {
+    const q = (searchQuery || query || '').toString();  // ← toString() 추가
+    if (!q.trim()) return;
 
     Keyboard.dismiss();
 
@@ -238,7 +240,6 @@ export default function SearchPillScreen({ setAppMode }) {
                     onPress={handleResetMock}
                     style={styles.devResetBtn}
                   >
-                    <Text style={styles.devResetBtnText}>임시 초기화</Text>
                   </TouchableOpacity>
                 ) : null}
               </ScrollView>
@@ -445,21 +446,7 @@ const styles = StyleSheet.create({
     color: '#222222',
     marginTop: 4,
   },
-  devResetBtn: {
-    alignSelf: 'center',
-    marginTop: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: '#E8F5E9',
-    borderWidth: 1,
-    borderColor: '#67A369',
-  },
-  devResetBtnText: {
-    color: COLORS.primaryDark,
-    fontWeight: '700',
-    fontSize: 13,
-  },
+
   bottomBar: {
     height: 60,
     backgroundColor: COLORS.warm,
