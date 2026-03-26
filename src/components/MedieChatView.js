@@ -13,15 +13,16 @@ import {
     Platform,
 } from 'react-native';
 import * as Speech from 'expo-speech';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system/legacy';
 import {
     ExpoSpeechRecognitionModule,
     useSpeechRecognitionEvent,
 } from 'expo-speech-recognition';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
-// ✅ 절대경로 말고 상대경로로 수정
 import MEDIEMUNG_IMG from '../../assets/mediemung.png';
 
 export const MedieChatView = ({
@@ -36,8 +37,6 @@ export const MedieChatView = ({
     const [showConfirmButtons, setShowConfirmButtons] = useState(false);
     const [bubbleText, setBubbleText] = useState('');
     const [showBubble, setShowBubble] = useState(false);
-
-    // ✅ 키보드 상태 추가
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
@@ -51,12 +50,13 @@ export const MedieChatView = ({
     const isChatOpenRef = useRef(false);
     const isSpeakingRef = useRef(false);
     const sendTimerRef = useRef(null);
+    const playerRef = useRef(null);
 
     useEffect(() => {
         isThinkingRef.current = isThinking;
     }, [isThinking]);
 
-    // ✅ 키보드 이벤트
+    // 키보드 이벤트
     useEffect(() => {
         const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
         const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -77,46 +77,24 @@ export const MedieChatView = ({
         };
     }, []);
 
-    // ✅ 하단바 위 기본 위치 + 키보드 대응
-    // 하단바 높이(약 60) + 여유값
     const baseBottom = Platform.OS === 'ios' ? 92 : 84;
-    const dynamicBottom = isKeyboardVisible
-        ? keyboardHeight + 14
-        : baseBottom;
-
-    // ✅ bubble / confirm box도 같이 따라오게
+    const dynamicBottom = isKeyboardVisible ? keyboardHeight + 14 : baseBottom;
     const bubbleBottom = dynamicBottom + 96;
     const confirmBottom = dynamicBottom + 106;
 
     const showBubbleText = (text) => {
         setBubbleText(text);
         setShowBubble(true);
-
         Animated.parallel([
-            Animated.timing(bubbleOpacity, {
-                toValue: 1,
-                duration: 180,
-                useNativeDriver: true,
-            }),
-            Animated.spring(bubbleScale, {
-                toValue: 1,
-                useNativeDriver: true,
-            }),
+            Animated.timing(bubbleOpacity, { toValue: 1, duration: 180, useNativeDriver: true }),
+            Animated.spring(bubbleScale, { toValue: 1, useNativeDriver: true }),
         ]).start();
     };
 
     const hideBubble = () => {
         Animated.parallel([
-            Animated.timing(bubbleOpacity, {
-                toValue: 0,
-                duration: 180,
-                useNativeDriver: true,
-            }),
-            Animated.timing(bubbleScale, {
-                toValue: 0.8,
-                duration: 180,
-                useNativeDriver: true,
-            }),
+            Animated.timing(bubbleOpacity, { toValue: 0, duration: 180, useNativeDriver: true }),
+            Animated.timing(bubbleScale, { toValue: 0.8, duration: 180, useNativeDriver: true }),
         ]).start(() => {
             setShowBubble(false);
             setBubbleText('');
@@ -128,20 +106,11 @@ export const MedieChatView = ({
             Animated.loop(
                 Animated.sequence([
                     Animated.delay(delay),
-                    Animated.timing(dot, {
-                        toValue: -6,
-                        duration: 260,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(dot, {
-                        toValue: 0,
-                        duration: 260,
-                        useNativeDriver: true,
-                    }),
+                    Animated.timing(dot, { toValue: -6, duration: 260, useNativeDriver: true }),
+                    Animated.timing(dot, { toValue: 0, duration: 260, useNativeDriver: true }),
                 ])
             ).start();
         };
-
         animate(dotAnim1, 0);
         animate(dotAnim2, 120);
         animate(dotAnim3, 240);
@@ -166,13 +135,65 @@ export const MedieChatView = ({
         }
     }, [isThinking]);
 
-    const speakMedie = (text) => {
+    // ✅ ElevenLabs TTS - FileReader 대신 직접 다운로드 방식
+    const speakMedie = async (text) => {
+        console.log("🔊 speakMedie 호출:", text);
         isSpeakingRef.current = true;
         setIsListening(false);
         showBubbleText(text);
 
-        setTimeout(() => {
+        try {
             ExpoSpeechRecognitionModule.stop();
+
+            console.log("📡 TTS 서버 요청 중...", `${API_BASE_URL}/tts`);
+
+            const response = await fetch(`${API_BASE_URL}/tts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text }),
+            });
+
+            if (!response.ok) throw new Error(`TTS 오류: ${response.status}`);
+
+            // ✅ arrayBuffer로 받아서 base64 변환
+            const arrayBuffer = await response.arrayBuffer();
+            const base64Audio = btoa(
+                new Uint8Array(arrayBuffer).reduce(
+                    (data, byte) => data + String.fromCharCode(byte), ''
+                )
+            );
+
+            const fileUri = `${FileSystem.cacheDirectory}medie_tts.mp3`;
+            await FileSystem.writeAsStringAsync(fileUri, base64Audio, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+
+            console.log("📥 파일 저장 완료:", fileUri);
+
+            if (playerRef.current) {
+                await playerRef.current.unloadAsync();
+                playerRef.current = null;
+            }
+
+            console.log("🎵 오디오 재생 시작");
+            const { sound } = await Audio.Sound.createAsync({ uri: fileUri });
+            playerRef.current = sound;
+            await sound.playAsync();
+
+            sound.setOnPlaybackStatusUpdate((status) => {
+                if (status.didJustFinish) {
+                    console.log("✅ TTS 재생 완료");
+                    isSpeakingRef.current = false;
+                    sound.unloadAsync();
+                    setTimeout(() => {
+                        hideBubble();
+                        if (!isThinkingRef.current) startListeningInternal();
+                    }, 800);
+                }
+            });
+
+        } catch (e) {
+            console.error('❌ TTS 실패, expo-speech로 대체:', e);
             Speech.speak(text, {
                 language: 'ko-KR',
                 pitch: 1.08,
@@ -190,17 +211,18 @@ export const MedieChatView = ({
                     if (!isThinkingRef.current) startListeningInternal();
                 },
             });
-        }, 250);
+        }
     };
 
+    // 음성 인식
     useSpeechRecognitionEvent('result', (event) => {
         const transcript = event.results[0]?.transcript;
+        console.log("👂 인식:", transcript, "/ thinking:", isThinkingRef.current, "/ speaking:", isSpeakingRef.current, "/ chatOpen:", isChatOpenRef.current);
         if (!transcript || isThinkingRef.current || isSpeakingRef.current) return;
 
-        if (
-            !isChatOpenRef.current &&
-            (transcript.includes('매디') || transcript.includes('메디'))
-        ) {
+        if (!isChatOpenRef.current &&
+            (transcript.includes('매디') || transcript.includes('메디'))) {
+            console.log("🔔 호출어 감지!");
             isChatOpenRef.current = true;
             speakMedie('네, 주인님! 부르셨나요? 멍!');
             return;
@@ -208,7 +230,6 @@ export const MedieChatView = ({
 
         if (isChatOpenRef.current) {
             if (sendTimerRef.current) clearTimeout(sendTimerRef.current);
-
             sendTimerRef.current = setTimeout(() => {
                 ExpoSpeechRecognitionModule.stop();
                 setIsListening(false);
@@ -218,67 +239,81 @@ export const MedieChatView = ({
     });
 
     useSpeechRecognitionEvent('error', (event) => {
+        console.log("❌ 인식 에러:", event.error);
         if (event.error === 'no-speech') return;
-
         setIsListening(false);
-
         if (event.error === 'audio-capture') {
             setTimeout(() => {
-                if (!isThinkingRef.current && !isSpeakingRef.current) {
-                    startListeningInternal();
-                }
+                if (!isThinkingRef.current && !isSpeakingRef.current) startListeningInternal();
             }, 1800);
         }
     });
 
     useSpeechRecognitionEvent('end', () => {
         setIsListening(false);
-        if (!isThinkingRef.current && !isSpeakingRef.current) {
+        if (!isThinkingRef.current && !isSpeakingRef.current && isChatOpenRef.current) {
             setTimeout(() => startListeningInternal(), 300);
         }
     });
 
     const startListeningInternal = async () => {
+        console.log("🎤 마이크 시작 시도");
         try {
-            await ExpoSpeechRecognitionModule.start({
-                lang: 'ko-KR',
-                interimResults: true,
-            });
+            await ExpoSpeechRecognitionModule.start({ lang: 'ko-KR', interimResults: true });
             setIsListening(true);
+            console.log("🎤 마이크 시작 성공");
         } catch (e) {
-            if (!e.message?.includes('already')) {
-                console.error('마이크 재시작 실패:', e);
-            }
+            if (!e.message?.includes('already')) console.error('마이크 재시작 실패:', e);
             setIsListening(false);
         }
     };
 
     const handleStartListening = async () => {
         try {
-            const result =
-                await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-
+            const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
             if (!result.granted) {
                 Alert.alert('권한 거부', '마이크 권한이 필요합니다!');
                 return;
             }
-
             await startListeningInternal();
         } catch (e) {
             console.error('마이크 시작 실패:', e);
         }
     };
 
+    // 초기화
     useEffect(() => {
-        handleStartListening();
+        const init = async () => {
+            console.log("🚀 MedieChatView 초기화 시작");
+            try {
+                await Audio.setAudioModeAsync({
+                    playsInSilentModeIOS: true,
+                    shouldDuckAndroid: true,
+                });
+                console.log("✅ 오디오 모드 설정 완료");
+            } catch (e) {
+                console.error('오디오 모드 설정 실패:', e);
+            }
+            await handleStartListening();
+        };
+
+        init();
 
         return () => {
             ExpoSpeechRecognitionModule.stop();
             if (sendTimerRef.current) clearTimeout(sendTimerRef.current);
+            try {
+                playerRef.current?.unloadAsync?.();
+                playerRef.current = null;
+            } catch (e) {
+                console.error('오디오 정리 실패:', e);
+            }
         };
     }, []);
 
+    // 서버 통신
     const askMedie = async (userText) => {
+        console.log("💬 askMedie 호출:", userText);
         setIsThinking(true);
         isThinkingRef.current = true;
 
@@ -290,16 +325,20 @@ export const MedieChatView = ({
             });
 
             const data = await response.json();
+            console.log("📨 서버 응답:", data);
 
             if (data.target && data.target !== 'NONE' && data.target !== 'IDLE') {
+                console.log("📱 화면 이동:", data.target);
                 setTimeout(() => setAppMode(data.target), 400);
             }
 
             if (data.command === 'COMPLETE_DOSE') {
+                console.log("💊 복약 완료 처리");
                 if (onCompleteNextDose) await onCompleteNextDose();
             }
 
             if (data.command === 'SET_ALARM' && data.params?.time) {
+                console.log("⏰ 알람 변경:", data.params.time);
                 if (onChangeAlarmTime) {
                     const pillId = myPills[0]?.id || 'all';
                     await onChangeAlarmTime(pillId, data.params.time);
@@ -309,8 +348,9 @@ export const MedieChatView = ({
             if (data.show_confirmation) setShowConfirmButtons(true);
 
             speakMedie(data.reply);
+
         } catch (e) {
-            console.error('서버 연결 실패:', e);
+            console.error('❌ 서버 연결 실패:', e);
             speakMedie('서버와 연결할 수 없어요. 잠시 후 다시 시도해주세요.');
         } finally {
             setIsThinking(false);
@@ -319,6 +359,7 @@ export const MedieChatView = ({
     };
 
     const handleFloatingBtnPress = () => {
+        console.log("🐾 버튼 눌림 / isChatOpen:", isChatOpenRef.current, "/ isListening:", isListening);
         if (isChatOpenRef.current) {
             if (isListening) {
                 ExpoSpeechRecognitionModule.stop();
@@ -336,33 +377,24 @@ export const MedieChatView = ({
 
     return (
         <View style={styles.masterContainer} pointerEvents="box-none">
+
             {showBubble && (
-                <Animated.View
-                    style={[
-                        styles.bubble,
-                        {
-                            bottom: bubbleBottom,
-                            opacity: bubbleOpacity,
-                            transform: [{ scale: bubbleScale }],
-                        },
-                    ]}
-                >
+                <Animated.View style={[
+                    styles.bubble,
+                    {
+                        bottom: bubbleBottom,
+                        opacity: bubbleOpacity,
+                        transform: [{ scale: bubbleScale }],
+                    },
+                ]}>
                     {bubbleText === 'THINKING' ? (
                         <View style={styles.dotsContainer}>
-                            <Animated.View
-                                style={[styles.dot, { transform: [{ translateY: dotAnim1 }] }]}
-                            />
-                            <Animated.View
-                                style={[styles.dot, { transform: [{ translateY: dotAnim2 }] }]}
-                            />
-                            <Animated.View
-                                style={[styles.dot, { transform: [{ translateY: dotAnim3 }] }]}
-                            />
+                            <Animated.View style={[styles.dot, { transform: [{ translateY: dotAnim1 }] }]} />
+                            <Animated.View style={[styles.dot, { transform: [{ translateY: dotAnim2 }] }]} />
+                            <Animated.View style={[styles.dot, { transform: [{ translateY: dotAnim3 }] }]} />
                         </View>
                     ) : (
-                        <Text style={styles.bubbleText} numberOfLines={3}>
-                            {bubbleText}
-                        </Text>
+                        <Text style={styles.bubbleText} numberOfLines={3}>{bubbleText}</Text>
                     )}
                     <View style={styles.bubbleTail} />
                 </Animated.View>
@@ -372,23 +404,16 @@ export const MedieChatView = ({
                 <View style={[styles.confirmBox, { bottom: confirmBottom }]}>
                     <Text style={styles.confirmTitle}>방금 약 드셨나요? 🐾</Text>
                     <View style={styles.confirmButtons}>
-                        <TouchableOpacity
-                            style={styles.yesBtn}
-                            onPress={() => {
-                                setShowConfirmButtons(false);
-                                askMedie('응 먹었어!');
-                            }}
-                        >
+                        <TouchableOpacity style={styles.yesBtn} onPress={() => {
+                            setShowConfirmButtons(false);
+                            askMedie('응 먹었어!');
+                        }}>
                             <Text style={styles.btnText}>응, 먹었어! 💊</Text>
                         </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.noBtn}
-                            onPress={() => {
-                                setShowConfirmButtons(false);
-                                askMedie('아직 안 먹었어');
-                            }}
-                        >
+                        <TouchableOpacity style={styles.noBtn} onPress={() => {
+                            setShowConfirmButtons(false);
+                            askMedie('아직 안 먹었어');
+                        }}>
                             <Text style={styles.btnText}>아직 안 먹었어</Text>
                         </TouchableOpacity>
                     </View>
@@ -420,7 +445,6 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         zIndex: 999,
     },
-
     bubble: {
         position: 'absolute',
         alignSelf: 'center',
@@ -439,7 +463,6 @@ const styles = StyleSheet.create({
         borderColor: '#DCE9DD',
         zIndex: 40,
     },
-
     bubbleTail: {
         position: 'absolute',
         bottom: -8,
@@ -453,14 +476,12 @@ const styles = StyleSheet.create({
         borderRightColor: 'transparent',
         borderTopColor: '#FFFFFF',
     },
-
     bubbleText: {
         fontSize: 14,
         color: '#2F4F3E',
         lineHeight: 20,
         fontWeight: '500',
     },
-
     dotsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -468,7 +489,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 6,
         paddingVertical: 2,
     },
-
     dot: {
         width: 7,
         height: 7,
@@ -476,7 +496,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#67A369',
         marginHorizontal: 3,
     },
-
     confirmBox: {
         position: 'absolute',
         alignSelf: 'center',
@@ -493,7 +512,6 @@ const styles = StyleSheet.create({
         borderColor: '#DCE9DD',
         zIndex: 40,
     },
-
     confirmTitle: {
         fontSize: 15,
         fontWeight: '700',
@@ -501,11 +519,9 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         textAlign: 'center',
     },
-
     confirmButtons: {
         flexDirection: 'row',
     },
-
     yesBtn: {
         flex: 1,
         backgroundColor: '#67A369',
@@ -514,7 +530,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginRight: 4,
     },
-
     noBtn: {
         flex: 1,
         backgroundColor: '#A8B7A9',
@@ -523,13 +538,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginLeft: 4,
     },
-
     btnText: {
         color: '#FFFFFF',
         fontWeight: '700',
         fontSize: 13,
     },
-
     medieFloatingBtn: {
         position: 'absolute',
         left: '50%',
@@ -541,17 +554,14 @@ const styles = StyleSheet.create({
         backgroundColor: 'transparent',
         zIndex: 30,
     },
-
     listeningBtn: {
         transform: [{ scale: 1.04 }],
     },
-
     medieIcon: {
         width: 120,
         height: 120,
         resizeMode: 'contain',
     },
-
     activeDot: {
         position: 'absolute',
         top: 4,

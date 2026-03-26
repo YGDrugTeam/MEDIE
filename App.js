@@ -49,6 +49,7 @@ import useMyPills from './src/hooks/useMyPills';
 
 const STORAGE_KEY = 'MY_PILLS_JSON';
 
+
 export default function App() {
   const [isStarted, setIsStarted] = useState(false);
   const [appMode, setAppMode] = useState('LOGIN');
@@ -62,7 +63,7 @@ export default function App() {
   const [selectedPost, setSelectedPost] = useState(null);
   const [selectedBoardTitle, setSelectedBoardTitle] = useState('자유게시판');
   const [pillHistory, setPillHistory] = useState([]);
-  
+
   const handleOpenBoard = (post, boardTitle = '자유게시판') => {
     setSelectedPost(post);
     setSelectedBoardTitle(boardTitle);

@@ -31,7 +31,8 @@
           "microphonePermission": "메디가 당신의 목소리를 듣고 대답하기 위해 마이크 권한이 필요합니다.",
           "speechRecognitionPermission": "메디가 당신의 음성을 텍스트로 변환하기 위해 음성 인식 권한이 필요합니다."
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "splash": {
       "image": "./assets/splash-icon.png",
