@@ -8,12 +8,35 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { styles } from '../styles/commonStyles';
 import BackToMenuBtn from '../components/BackToMenuBtn';
 
 const API_BASE = 'http://20.106.40.121';
+
+const COLORS = {
+  background: '#FFFFFF',
+  primary: '#065809',
+  primaryLight: '#67A369',
+  secondary: '#8BBC8E',
+  soft: '#EEF7EE',
+  border: '#D9E8D7',
+  cardBg: '#FFFFFF',
+  text: '#222222',
+  subText: '#6F786C',
+  white: '#FFFFFF',
+
+  // 🔥 상태별 컬러 추가
+  pendingBg: '#EEF7EE',
+  pendingText: '#065809',
+
+  answeredBg: '#EAF6EC',
+  answeredText: '#2F7D45',
+
+  closedBg: '#F1F3F1',
+  closedText: '#6E756D',
+};
 
 export default function SupportMainScreen({ setAppMode, onOpenSupport }) {
   const [tickets, setTickets] = useState([]);
@@ -26,23 +49,13 @@ export default function SupportMainScreen({ setAppMode, onOpenSupport }) {
 
       const res = await fetch(`${API_BASE}/support/`);
       const text = await res.text();
+      const data = JSON.parse(text);
 
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (err) {
-        console.error('고객센터 응답 원문:', text);
-        throw new Error('서버가 JSON이 아닌 응답을 반환했습니다.');
-      }
-
-      if (!res.ok) {
-        throw new Error(data?.detail || '문의 목록 조회 실패');
-      }
+      if (!res.ok) throw new Error(data?.detail || '문의 목록 조회 실패');
 
       setTickets(Array.isArray(data) ? data : []);
     } catch (e) {
-      console.error('❌ fetchSupportTickets 실패:', e);
-      Alert.alert('오류', e.message || '문의 목록을 불러오지 못했습니다.');
+      Alert.alert('오류', e.message);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -58,10 +71,11 @@ export default function SupportMainScreen({ setAppMode, onOpenSupport }) {
     fetchSupportTickets();
   };
 
+  // 🔥 상태 텍스트
   const getStatusText = (status) => {
     switch (status) {
       case 'OPEN':
-        return '접수 완료';
+        return '접수중';
       case 'ANSWERED':
         return '답변 완료';
       case 'CLOSED':
@@ -71,185 +85,111 @@ export default function SupportMainScreen({ setAppMode, onOpenSupport }) {
     }
   };
 
-  const getStatusColor = (status) => {
+  // 🔥 상태칩 디자인
+  const getStatusChipStyle = (status) => {
     switch (status) {
-      case 'OPEN':
-        return '#FF7F50';
       case 'ANSWERED':
-        return '#1F8B4C';
+        return {
+          backgroundColor: COLORS.answeredBg,
+          color: COLORS.answeredText,
+        };
       case 'CLOSED':
-        return '#666';
+        return {
+          backgroundColor: COLORS.closedBg,
+          color: COLORS.closedText,
+        };
+      case 'OPEN':
       default:
-        return '#666';
+        return {
+          backgroundColor: COLORS.pendingBg,
+          color: COLORS.pendingText,
+        };
     }
   };
 
-  const renderTicketItem = ({ item }) => (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={() => onOpenSupport(item)}
-      style={{
-        backgroundColor: '#fff',
-        borderRadius: 14,
-        padding: 14,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: '#eee',
-      }}
-    >
-      <View
-        style={{
-          alignSelf: 'flex-start',
-          backgroundColor: '#FFF4EC',
-          borderRadius: 999,
-          paddingHorizontal: 10,
-          paddingVertical: 5,
-          marginBottom: 10,
-        }}
+  const renderTicketItem = ({ item }) => {
+    const statusChip = getStatusChipStyle(item.status);
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => onOpenSupport(item)}
+        style={styles.ticketCard}
       >
-        <Text
-          style={{
-            fontSize: 11,
-            fontWeight: '700',
-            color: getStatusColor(item.status),
-          }}
+        <View
+          style={[
+            styles.statusChip,
+            { backgroundColor: statusChip.backgroundColor },
+          ]}
         >
-          {getStatusText(item.status)}
-        </Text>
-      </View>
+          <Text style={[styles.statusChipText, { color: statusChip.color }]}>
+            {getStatusText(item.status)}
+          </Text>
+        </View>
 
-      <Text
-        style={{
-          fontSize: 15,
-          fontWeight: '700',
-          color: '#222',
-          marginBottom: 6,
-        }}
-        numberOfLines={1}
-      >
-        {item.title}
-      </Text>
+        <Text style={styles.ticketTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
 
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-        }}
-      >
-        <Text style={{ fontSize: 12, color: '#777' }}>
-          {item.author || '작성자 없음'}
-        </Text>
-        <Text style={{ fontSize: 12, color: '#999' }}>
-          {item.created_at ? item.created_at.slice(0, 10) : ''}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+        <View style={styles.ticketMetaRow}>
+          <Text style={styles.ticketMetaText}>
+            {item.author || '작성자 없음'}
+          </Text>
+          <Text style={styles.ticketMetaText}>
+            {item.created_at ? item.created_at.slice(0, 10) : ''}
+          </Text>
+        </View>
+
+        <View style={styles.ticketArrowWrap}>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.primaryLight} />
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={[styles.subContainer, { paddingBottom: 8 }]}>
-        <View
-          style={{
-            marginTop: 2,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
+      <View style={styles.container}>
+
+        {/* 헤더 */}
+        <View style={styles.header}>
           <TouchableOpacity
-            activeOpacity={0.8}
             onPress={() => setAppMode('COMMUNITY')}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#fff',
-              borderWidth: 1,
-              borderColor: '#eee',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            style={styles.backButton}
           >
-            <Ionicons name="arrow-back" size={20} color="#444" />
+            <Ionicons name="chevron-back" size={30} color={COLORS.secondary} />
           </TouchableOpacity>
 
-          <Text
-            style={{
-              fontSize: 21,
-              fontWeight: '800',
-              color: '#222',
-            }}
-          >
-            고객센터
-          </Text>
+          <Text style={styles.headerTitle}>고객센터</Text>
 
           <TouchableOpacity
-            activeOpacity={0.8}
             onPress={() => setAppMode('SUPPORT_WRITE')}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#FF7F50',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            style={styles.writeButton}
           >
-            <Text style={{ fontSize: 17, color: '#fff' }}>✏️</Text>
+            <Ionicons name="create-outline" size={18} color={COLORS.white} />
           </TouchableOpacity>
         </View>
 
-        <View
-          style={{
-            marginTop: 10,
-            marginBottom: 10,
-            backgroundColor: '#FFF4EE',
-            borderRadius: 10,
-            paddingVertical: 10,
-            paddingHorizontal: 12,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 14,
-              fontWeight: '700',
-              color: '#FF7F50',
-              marginBottom: 3,
-            }}
-          >
-            🎧 고객센터 문의 내역
-          </Text>
-          <Text style={{ fontSize: 12, color: '#777' }}>
-            문의를 남기면 순차적으로 확인 후 답변드릴게요.
-          </Text>
-        </View>
-
+        {/* 리스트 */}
         {isLoading ? (
-          <View style={{ marginTop: 24, alignItems: 'center', flex: 1 }}>
-            <ActivityIndicator size="large" />
-            <Text style={{ marginTop: 10, color: '#777' }}>
-              문의 목록을 불러오는 중...
-            </Text>
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.loadingText}>불러오는 중...</Text>
           </View>
         ) : (
           <FlatList
             data={tickets}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item, index) =>
+              item?.id ? String(item.id) : `ticket-${index}`
+            }
             renderItem={renderTicketItem}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 18, flexGrow: 1 }}
             refreshControl={
               <RefreshControl
                 refreshing={isRefreshing}
                 onRefresh={handleRefresh}
               />
             }
-            ListEmptyComponent={
-              <View style={{ alignItems: 'center', marginTop: 34 }}>
-                <Text style={{ color: '#777' }}>등록된 문의가 없습니다.</Text>
-              </View>
-            }
+            contentContainerStyle={{ paddingBottom: 100 }}
           />
         )}
 
@@ -258,3 +198,100 @@ export default function SupportMainScreen({ setAppMode, onOpenSupport }) {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#fff' },
+
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+
+  header: {
+    height: 68,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  headerTitle: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '800',
+  },
+
+  writeButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#67A369',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  ticketCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#eee',
+    marginBottom: 12,
+  },
+
+  statusChip: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 8,
+  },
+
+  statusChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  ticketTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+
+  ticketMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+
+  ticketMetaText: {
+    fontSize: 12,
+    color: '#777',
+  },
+
+  ticketArrowWrap: {
+    position: 'absolute',
+    right: 14,
+    top: '50%',
+    marginTop: -10,
+  },
+
+  loadingWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  loadingText: {
+    marginTop: 10,
+    color: '#777',
+  },
+});

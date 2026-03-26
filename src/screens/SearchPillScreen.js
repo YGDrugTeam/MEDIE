@@ -1,3 +1,4 @@
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,7 +15,6 @@ import {
 import { SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import usePillSearch from '../hooks/usePillSearch';
-import React, { useMemo, useState, useEffect } from 'react';
 
 const COLORS = {
   background: '#FFFFFF',
@@ -40,14 +40,6 @@ const createMockPill = (pillName) => ({
 });
 
 export default function SearchPillScreen({ setAppMode, initialKeyword, onSearch }) {
-  const [keyword, setKeyword] = useState(initialKeyword || '');
-
-  useEffect(() => {
-    if (initialKeyword) {
-      handleSearch(initialKeyword);
-      if (onSearch) onSearch();
-    }
-  }, [initialKeyword]);
   const apiBaseUrl = useMemo(() => 'http://20.106.40.121', []);
 
   const {
@@ -68,8 +60,8 @@ export default function SearchPillScreen({ setAppMode, initialKeyword, onSearch 
   const hasSearched = !!finalSelected;
 
   const handleSearch = (searchQuery) => {
-    const q = searchQuery || query;
-    if (!q?.trim()) return;
+    const q = (searchQuery || query || '').toString();  // ← toString() 추가
+    if (!q.trim()) return;
 
     Keyboard.dismiss();
 
@@ -253,7 +245,6 @@ export default function SearchPillScreen({ setAppMode, initialKeyword, onSearch 
                     onPress={handleResetMock}
                     style={styles.devResetBtn}
                   >
-                    <Text style={styles.devResetBtnText}>임시 초기화</Text>
                   </TouchableOpacity>
                 ) : null}
               </ScrollView>
@@ -460,21 +451,7 @@ const styles = StyleSheet.create({
     color: '#222222',
     marginTop: 4,
   },
-  devResetBtn: {
-    alignSelf: 'center',
-    marginTop: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: '#E8F5E9',
-    borderWidth: 1,
-    borderColor: '#67A369',
-  },
-  devResetBtnText: {
-    color: COLORS.primaryDark,
-    fontWeight: '700',
-    fontSize: 13,
-  },
+
   bottomBar: {
     height: 60,
     backgroundColor: COLORS.warm,
