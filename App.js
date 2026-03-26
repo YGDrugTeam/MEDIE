@@ -473,6 +473,7 @@ export default function App() {
           setAppMode={setAppMode}
           onCompleteNextDose={completeNextDose}
           onChangeAlarmTime={changePillAlarmTime}
+          onToggleAlarm={togglePillAlarm}   // ← 추가
           myPills={myPills}
         />
       </KeyboardAvoidingView>

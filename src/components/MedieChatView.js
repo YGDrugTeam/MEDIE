@@ -30,6 +30,7 @@ export const MedieChatView = ({
     setAppMode,
     onCompleteNextDose,
     onChangeAlarmTime,
+    onToggleAlarm,    // ← 추가
     myPills = [],
 }) => {
     const [isThinking, setIsThinking] = useState(false);
@@ -224,7 +225,7 @@ export const MedieChatView = ({
             (transcript.includes('매디') || transcript.includes('메디'))) {
             console.log("🔔 호출어 감지!");
             isChatOpenRef.current = true;
-            speakMedie('네, 주인님! 부르셨나요? 멍!');
+            speakMedie('네! 말씀해주세요!');
             return;
         }
 
@@ -340,8 +341,15 @@ export const MedieChatView = ({
             if (data.command === 'SET_ALARM' && data.params?.time) {
                 console.log("⏰ 알람 변경:", data.params.time);
                 if (onChangeAlarmTime) {
-                    const pillId = myPills[0]?.id || 'all';
+                    const pill = myPills[0];
+                    const pillId = pill?.id || 'all';
                     await onChangeAlarmTime(pillId, data.params.time);
+
+                    // ✅ 알람 꺼져있으면 자동으로 ON
+                    if (pill && !pill.alarmEnabled && onToggleAlarm) {
+                        await onToggleAlarm(pillId);
+                        console.log("🔔 알람 자동 ON:", pillId);
+                    }
                 }
             }
 
@@ -371,7 +379,7 @@ export const MedieChatView = ({
             }
         } else {
             isChatOpenRef.current = true;
-            speakMedie('네! 말씀해주세요 멍!');
+            speakMedie('네! 말씀해주세요!');
         }
     };
 
