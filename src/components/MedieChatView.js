@@ -35,6 +35,7 @@ export const MedieChatView = ({
     onSearchDrug,   // ← 추가
     onWritePost,   // ← 추가
     myPills = [],
+    pillHistory = [],  // ← 추가
 }) => {
     const [isThinking, setIsThinking] = useState(false);
     const [isListening, setIsListening] = useState(false);
@@ -325,7 +326,7 @@ export const MedieChatView = ({
             const response = await fetch(`${API_BASE_URL}/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: userText, current_mode: appMode }),
+                body: JSON.stringify({ message: userText, current_mode: appMode, pill_history: pillHistory }),
             });
 
             const data = await response.json();
