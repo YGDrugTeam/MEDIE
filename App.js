@@ -65,6 +65,7 @@ export default function App() {
   const [selectedPill, setSelectedPill] = useState(null);
   const [hasSeenMedicationOnboarding, setHasSeenMedicationOnboarding] = useState(false);
 
+
   const handleOpenBoard = (post, boardTitle = '자유게시판') => {
     setSelectedPost(post);
     setSelectedBoardTitle(boardTitle);
