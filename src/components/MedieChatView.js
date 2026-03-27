@@ -44,6 +44,8 @@ export const MedieChatView = ({
     const [showBubble, setShowBubble] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+    const isVisibleRef = useRef(true);
 
     const bubbleOpacity = useRef(new Animated.Value(0)).current;
     const bubbleScale = useRef(new Animated.Value(0.8)).current;
@@ -240,13 +242,27 @@ export const MedieChatView = ({
 
     useSpeechRecognitionEvent('result', (event) => {
         const transcript = event.results[0]?.transcript;
-        console.log("👂 인식:", transcript, "/ thinking:", isThinkingRef.current, "/ speaking:", isSpeakingRef.current, "/ chatOpen:", isChatOpenRef.current);
         if (!transcript || isThinkingRef.current || isSpeakingRef.current) return;
 
+        // ✅ 숨기기 키워드 감지
+        if (isChatOpenRef.current &&
+            (transcript.includes('나가') || transcript.includes('꺼져') || transcript.includes('닫아'))) {
+            console.log("👋 매디 숨김!");
+            isChatOpenRef.current = false;
+            isVisibleRef.current = false;
+            setIsVisible(false);
+            hideBubble();
+            ExpoSpeechRecognitionModule.stop();
+            return;
+        }
+
+        // ✅ 호출어 감지 (숨김 상태에서도 작동)
         if (!isChatOpenRef.current &&
             (transcript.includes('매디') || transcript.includes('메디'))) {
             console.log("🔔 호출어 감지!");
             isChatOpenRef.current = true;
+            isVisibleRef.current = true;
+            setIsVisible(true);
             speakMedie('네! 말씀해주세요!');
             return;
         }
@@ -472,27 +488,29 @@ export const MedieChatView = ({
             )}
 
             {/* ✅ 드래그 가능한 매디 버튼 */}
-            <Animated.View
-                style={[
-                    styles.medieFloatingBtn,
-                    { bottom: dynamicBottom },
-                    { transform: panRef.getTranslateTransform() },
-                    isListening && styles.listeningBtn,
-                ]}
-                {...panResponder.panHandlers}
-            >
-                <TouchableOpacity
-                    onPress={handleFloatingBtnPress}
-                    activeOpacity={0.92}
+            {isVisible && (  // ← 여기 추가
+                <Animated.View
+                    style={[
+                        styles.medieFloatingBtn,
+                        { bottom: dynamicBottom },
+                        { transform: panRef.getTranslateTransform() },
+                        isListening && styles.listeningBtn,
+                    ]}
+                    {...panResponder.panHandlers}
                 >
-                    {isThinking ? (
-                        <ActivityIndicator color="#67A369" size="small" />
-                    ) : (
-                        <Image source={MEDIEMUNG_IMG} style={styles.medieIcon} />
-                    )}
-                    {isListening && <View style={styles.activeDot} />}
-                </TouchableOpacity>
-            </Animated.View>
+                    <TouchableOpacity
+                        onPress={handleFloatingBtnPress}
+                        activeOpacity={0.92}
+                    >
+                        {isThinking ? (
+                            <ActivityIndicator color="#67A369" size="small" />
+                        ) : (
+                            <Image source={MEDIEMUNG_IMG} style={styles.medieIcon} />
+                        )}
+                        {isListening && <View style={styles.activeDot} />}
+                    </TouchableOpacity>
+                </Animated.View>
+            )}
         </View>
     );
 };
