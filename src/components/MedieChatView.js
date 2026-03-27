@@ -372,12 +372,14 @@ export const MedieChatView = ({
                 if (onWritePost) {
                     onWritePost({
                         title: data.params.title,
+                        author: data.params.author || '익명',  // ← 추가
                         content: data.params.content,
                         board_type: data.params.board_type
                     });
                 }
                 setTimeout(() => setAppMode('WRITE_BOARD'), 400);
             }
+            if (data.show_confirmation) setShowConfirmButtons(true);
 
             speakMedie(data.reply);
 

@@ -59,6 +59,7 @@ export default function WriteBoardScreen({
   useEffect(() => {
     if (voiceDraft) {
       setTitle(voiceDraft.title || '');
+      setAuthor(voiceDraft.author || '');  // ← 추가
       setContent(voiceDraft.content || '');
       if (onDraftUsed) onDraftUsed();
     }
