@@ -598,6 +598,7 @@ export default function App() {
         onSearchDrug={(keyword) => setSearchKeyword(keyword)}
         onWritePost={(draft) => setVoicePostDraft(draft)}
         myPills={myPills}
+        pillHistory={pillHistory}
       />
     </SafeAreaView>
   );
