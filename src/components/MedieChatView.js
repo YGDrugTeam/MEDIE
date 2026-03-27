@@ -11,6 +11,7 @@ import {
     Alert,
     Keyboard,
     Platform,
+    PanResponder,
 } from 'react-native';
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
@@ -19,7 +20,6 @@ import {
     ExpoSpeechRecognitionModule,
     useSpeechRecognitionEvent,
 } from 'expo-speech-recognition';
-
 
 const { width } = Dimensions.get('window');
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
@@ -32,10 +32,10 @@ export const MedieChatView = ({
     onCompleteNextDose,
     onChangeAlarmTime,
     onToggleAlarm,
-    onSearchDrug,   // ← 추가
-    onWritePost,   // ← 추가
+    onSearchDrug,
+    onWritePost,
     myPills = [],
-    pillHistory = [],  // ← 추가
+    pillHistory = [],
 }) => {
     const [isThinking, setIsThinking] = useState(false);
     const [isListening, setIsListening] = useState(false);
@@ -57,11 +57,33 @@ export const MedieChatView = ({
     const sendTimerRef = useRef(null);
     const playerRef = useRef(null);
 
+    // ✅ 드래그용 ref
+    const panRef = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onPanResponderGrant: () => {
+                panRef.setOffset({
+                    x: panRef.x._value,
+                    y: panRef.y._value,
+                });
+                panRef.setValue({ x: 0, y: 0 });
+            },
+            onPanResponderMove: Animated.event(
+                [null, { dx: panRef.x, dy: panRef.y }],
+                { useNativeDriver: false }
+            ),
+            onPanResponderRelease: () => {
+                panRef.flattenOffset();
+            },
+        })
+    ).current;
+
     useEffect(() => {
         isThinkingRef.current = isThinking;
     }, [isThinking]);
 
-    // 키보드 이벤트
     useEffect(() => {
         const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
         const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -140,7 +162,6 @@ export const MedieChatView = ({
         }
     }, [isThinking]);
 
-    // ElevenLabs TTS - FileReader 대신 직접 다운로드 방식
     const speakMedie = async (text) => {
         console.log("🔊 speakMedie 호출:", text);
         isSpeakingRef.current = true;
@@ -149,7 +170,6 @@ export const MedieChatView = ({
 
         try {
             ExpoSpeechRecognitionModule.stop();
-
             console.log("📡 TTS 서버 요청 중...", `${API_BASE_URL}/tts`);
 
             const response = await fetch(`${API_BASE_URL}/tts`, {
@@ -160,7 +180,6 @@ export const MedieChatView = ({
 
             if (!response.ok) throw new Error(`TTS 오류: ${response.status}`);
 
-            // ✅ arrayBuffer로 받아서 base64 변환
             const arrayBuffer = await response.arrayBuffer();
             const base64Audio = btoa(
                 new Uint8Array(arrayBuffer).reduce(
@@ -219,7 +238,6 @@ export const MedieChatView = ({
         }
     };
 
-    // 음성 인식
     useSpeechRecognitionEvent('result', (event) => {
         const transcript = event.results[0]?.transcript;
         console.log("👂 인식:", transcript, "/ thinking:", isThinkingRef.current, "/ speaking:", isSpeakingRef.current, "/ chatOpen:", isChatOpenRef.current);
@@ -286,7 +304,6 @@ export const MedieChatView = ({
         }
     };
 
-    // 초기화
     useEffect(() => {
         const init = async () => {
             console.log("🚀 MedieChatView 초기화 시작");
@@ -316,7 +333,6 @@ export const MedieChatView = ({
         };
     }, []);
 
-    // 서버 통신
     const askMedie = async (userText) => {
         console.log("💬 askMedie 호출:", userText);
         setIsThinking(true);
@@ -326,7 +342,11 @@ export const MedieChatView = ({
             const response = await fetch(`${API_BASE_URL}/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: userText, current_mode: appMode, pill_history: pillHistory }),
+                body: JSON.stringify({
+                    message: userText,
+                    current_mode: appMode,
+                    pill_history: pillHistory,
+                }),
             });
 
             const data = await response.json();
@@ -348,8 +368,6 @@ export const MedieChatView = ({
                     const pill = myPills[0];
                     const pillId = pill?.id || 'all';
                     await onChangeAlarmTime(pillId, data.params.time);
-
-                    // ✅ 알람 꺼져있으면 자동으로 ON
                     if (pill && !pill.alarmEnabled && onToggleAlarm) {
                         await onToggleAlarm(pillId);
                         console.log("🔔 알람 자동 ON:", pillId);
@@ -357,30 +375,28 @@ export const MedieChatView = ({
                 }
             }
 
-            // ✅ 약 검색 실행
+            if (data.show_confirmation) setShowConfirmButtons(true);
+
             if (data.command === 'SEARCH_DRUG' && data.params?.keyword) {
                 console.log("🔍 약 검색:", data.params.keyword);
                 setTimeout(() => {
                     setAppMode('SEARCH_PILL');
-                    // SearchPillScreen에 keyword 전달
                     if (onSearchDrug) onSearchDrug(data.params.keyword);
                 }, 400);
             }
 
-            // ✅ 게시글 작성 (Human in the Loop)
             if (data.command === 'WRITE_POST' && data.params?.title) {
                 console.log("✍️ 게시글 작성:", data.params);
                 if (onWritePost) {
                     onWritePost({
                         title: data.params.title,
-                        author: data.params.author || '익명',  // ← 추가
+                        author: data.params.author || '익명',
                         content: data.params.content,
                         board_type: data.params.board_type
                     });
                 }
                 setTimeout(() => setAppMode('WRITE_BOARD'), 400);
             }
-            if (data.show_confirmation) setShowConfirmButtons(true);
 
             speakMedie(data.reply);
 
@@ -455,22 +471,28 @@ export const MedieChatView = ({
                 </View>
             )}
 
-            <TouchableOpacity
+            {/* ✅ 드래그 가능한 매디 버튼 */}
+            <Animated.View
                 style={[
                     styles.medieFloatingBtn,
                     { bottom: dynamicBottom },
+                    { transform: panRef.getTranslateTransform() },
                     isListening && styles.listeningBtn,
                 ]}
-                onPress={handleFloatingBtnPress}
-                activeOpacity={0.92}
+                {...panResponder.panHandlers}
             >
-                {isThinking ? (
-                    <ActivityIndicator color="#67A369" size="small" />
-                ) : (
-                    <Image source={MEDIEMUNG_IMG} style={styles.medieIcon} />
-                )}
-                {isListening && <View style={styles.activeDot} />}
-            </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={handleFloatingBtnPress}
+                    activeOpacity={0.92}
+                >
+                    {isThinking ? (
+                        <ActivityIndicator color="#67A369" size="small" />
+                    ) : (
+                        <Image source={MEDIEMUNG_IMG} style={styles.medieIcon} />
+                    )}
+                    {isListening && <View style={styles.activeDot} />}
+                </TouchableOpacity>
+            </Animated.View>
         </View>
     );
 };
@@ -609,3 +631,4 @@ const styles = StyleSheet.create({
         borderColor: '#FFFFFF',
     },
 });
+
