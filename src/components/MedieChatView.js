@@ -45,7 +45,9 @@ export const MedieChatView = ({
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
+    const [chatHistory, setChatHistory] = useState([]);
     const isVisibleRef = useRef(true);
+
 
     const bubbleOpacity = useRef(new Animated.Value(0)).current;
     const bubbleScale = useRef(new Animated.Value(0.8)).current;
@@ -354,6 +356,12 @@ export const MedieChatView = ({
         setIsThinking(true);
         isThinkingRef.current = true;
 
+        const newHistory = [
+            ...chatHistory,
+            { role: "user", content: userText }
+        ];
+
+
         try {
             const response = await fetch(`${API_BASE_URL}/chat`, {
                 method: 'POST',
@@ -362,11 +370,21 @@ export const MedieChatView = ({
                     message: userText,
                     current_mode: appMode,
                     pill_history: pillHistory,
+                    chat_history: newHistory,  // ← 추가
                 }),
             });
 
             const data = await response.json();
             console.log("📨 서버 응답:", data);
+
+            setChatHistory([
+                ...newHistory,
+                { role: "assistant", content: data.reply }
+            ]);
+
+            if (newHistory.length > 10) {
+                setChatHistory(prev => prev.slice(-10));
+            }
 
             if (data.target && data.target !== 'NONE' && data.target !== 'IDLE') {
                 console.log("📱 화면 이동:", data.target);
