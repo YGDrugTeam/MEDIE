@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { Image } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -11,48 +9,47 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Image,
+  SafeAreaView
 } from 'react-native';
-
-// 1. 꼭 추가해야 하는 라이브러리!
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loginWithKakao } from '../services/kakaoAuthService';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as SecureStore from 'expo-secure-store'; 
 import { loginWithEmail } from '../services/authService';
+import { loginWithKakao } from '../services/kakaoAuthService';
 
 export default function LoginScreen({ setAppMode, setIsLoggedIn, setUser }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // --- 이메일 로그인 ---
+  // --- 로그인 로직 수정 ---
   async function handleEmailLogin() {
     if (!email.trim() || !password.trim()) {
       Alert.alert('안내', '이메일과 비밀번호를 입력해주세요.');
       return;
     }
-
     setLoading(true);
     try {
-      const result = await loginWithEmail({
-        email: email.trim(),
-        password: password.trim(),
-      });
-
+      const result = await loginWithEmail({ email: email.trim(), password: password.trim() });
       if (!result.success) {
         Alert.alert('로그인 실패', result.message);
         return;
       }
 
-      // 📍 2. 토큰 저장 로직
       const token = result.data?.access_token || result.data?.token;
+      const userObj = result.data?.user;
+
       if (token) {
-        await AsyncStorage.setItem('userToken', token);
-        console.log('✅ 이메일 로그인 토큰 저장 완료');
+        // App.js에서 사용하는 키값('accessToken')으로 통일해서 저장
+        await SecureStore.setItemAsync('accessToken', token);
+        await SecureStore.setItemAsync('userId', String(userObj?.id || ''));
+        await SecureStore.setItemAsync('userName', userObj?.name || userObj?.nickname || '');
+        await SecureStore.setItemAsync('userEmail', userObj?.email || '');
       }
 
+      setUser(userObj || null);
       setIsLoggedIn(true);
-      setUser(result.data?.user || null);
       setAppMode('MEDICATION_ONBOARDING');
-
     } catch (e) {
       Alert.alert('로그인 실패', e?.message || '알 수 없는 오류');
     } finally {
@@ -60,167 +57,185 @@ export default function LoginScreen({ setAppMode, setIsLoggedIn, setUser }) {
     }
   }
 
-  // --- 카카오 로그인 ---
+  // 카카오 로그인도 동일하게 수정 
   async function handleKakaoLogin() {
     setLoading(true);
     try {
       const result = await loginWithKakao();
+      if (!result.success) { Alert.alert('카카오 로그인 실패', result.message); return; }
 
-      if (!result.success) {
-        Alert.alert('카카오 로그인 실패', result.message);
-        return;
-      }
-
-      // 3. 카카오 토큰 저장 로직
       const token = result.data?.access_token || result.data?.token;
+      const userObj = result.data?.user;
+
       if (token) {
-        await AsyncStorage.setItem('userToken', token);
-        console.log('✅ 카카오 로그인 토큰 저장 완료');
+        await SecureStore.setItemAsync('accessToken', token);
+        await SecureStore.setItemAsync('userId', String(userObj?.id || ''));
       }
 
+      setUser(userObj || null);
       setIsLoggedIn(true);
-      setUser(result.data?.user || null);
       setAppMode('MEDICATION_ONBOARDING');
-
     } catch (e) {
       Alert.alert('카카오 로그인 실패', e?.message || '알 수 없는 오류');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   return (
-    <LinearGradient colors={['#E8F5E9', '#FFFDE7']} style={styles.gradient}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          bounces={false}
+    <LinearGradient colors={['#F9FFF9', '#F0F4F0']} style={styles.flex}>
+      {/* ... (기존 return 내부 UI 코드는 동일) ... */}
+      <SafeAreaView style={styles.flex}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : null}
+          style={styles.flex}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
         >
-          <View style={styles.inner}>
-            <Text style={styles.label}>이메일</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="이메일을 입력하세요"
-              placeholderTextColor="#999"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
+          <ScrollView
+            contentContainerStyle={styles.scrollInner}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+          >
+            <View style={styles.headerArea}>
+              <Text style={styles.welcomeText}>반가워요!</Text>
+              <Text style={styles.subText}>로그인하고 건강을 관리해보세요.</Text>
+            </View>
 
-            <Text style={styles.label}>비밀번호</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="비밀번호를 입력하세요"
-              placeholderTextColor="#999"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
-
-            <TouchableOpacity onPress={() => setAppMode('REGISTER')}>
-              <Text style={styles.link}>회원가입 하러가기</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleEmailLogin}
-              disabled={loading}
-            >
-              <Text style={styles.buttonText}>
-                {loading ? '처리 중...' : '로그인'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleKakaoLogin}
-              disabled={loading}
-              style={styles.kakaoWrap}
-            >
-              <Image
-                source={require('../../assets/kakaologin.png')}
-                style={{ width: 87, height: 48 }}
-                resizeMode="contain"
+            <View style={styles.formArea}>
+              <Text style={styles.label}>이메일</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="example@gmail.com"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                placeholderTextColor="#aaa"
               />
-            </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => setAppMode('HOME')}>
-              <Text style={styles.cancelLink}>취소</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+              <Text style={styles.label}>비밀번호</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="비밀번호를 입력하세요"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                placeholderTextColor="#aaa"
+              />
+
+              <TouchableOpacity
+                style={[styles.button, loading && { opacity: 0.7 }]}
+                onPress={handleEmailLogin}
+                disabled={loading}
+              >
+                <Text style={styles.buttonText}>{loading ? '처리 중...' : '로그인'}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleKakaoLogin}
+                style={styles.kakaoWrap}
+              >
+                <Image
+                  source={require('../../assets/kakaologin.png')}
+                  style={{ width: '100%', height: 52 }}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.footer}>
+              <TouchableOpacity onPress={() => setAppMode('REGISTER')}>
+                <Text style={styles.footerText}>
+                  계정이 없으신가요? <Text style={styles.linkText}>회원가입</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  gradient: {
-    flex: 1,
-  },
-  scrollContent: {
+  flex: { flex: 1 },
+  scrollInner: {
     flexGrow: 1,
+    paddingHorizontal: 28,
+    paddingTop: 60, // 상단 여백을 충분히 주어 글자가 덜 올라가게 함
+    paddingBottom: 40,
   },
-  inner: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 32,
+  headerArea: {
+    marginBottom: 60, // 글자와 입력창 사이 간격 확보
+  },
+  welcomeText: {
+    fontSize: 34,
+    fontWeight: '900',
+    color: '#1B5E20',
+    marginBottom: 10,
+    letterSpacing: -1,
+  },
+  subText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+  },
+  formArea: {
+    width: '100%',
   },
   label: {
     fontSize: 14,
     fontWeight: '700',
     color: '#444',
-    marginBottom: 6,
+    marginBottom: 8,
     marginLeft: 4,
   },
   input: {
-    height: 52,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    marginBottom: 14,
+    height: 58,
+    borderWidth: 1.5,
+    borderColor: '#E2E8E2',
+    borderRadius: 15,
+    paddingHorizontal: 18,
+    marginBottom: 18,
     backgroundColor: '#fff',
     color: '#222',
+    fontSize: 16,
   },
   button: {
-    height: 43,
-    width: 87,
-    borderRadius: 12,
+    height: 58,
+    width: '100%',
+    borderRadius: 15,
     backgroundColor: '#67A369',
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center',
-    marginTop: 6,
-    marginBottom: 10,
+    marginTop: 10,
+    // 그림자 살짝 넣어주면 더 고급져요
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
   },
   kakaoWrap: {
-    alignSelf: 'center',
-    marginTop: 8,
+    marginTop: 15,
+    width: '100%',
+    alignItems: 'center',
   },
-  link: {
-    textAlign: 'center',
-    color: '#000000',
-    marginBottom: 6,
-    fontWeight: '600',
+  footer: {
+    marginTop: 'auto', // 내용이 적을 때 바닥에 붙도록 함
+    paddingTop: 30,
+    alignItems: 'center',
   },
-  cancelLink: {
-    textAlign: 'center',
-    marginTop: 10,
+  footerText: {
+    fontSize: 15,
     color: '#777',
-    fontWeight: '500',
+  },
+  linkText: {
+    color: '#67A369',
+    fontWeight: '800',
+    textDecorationLine: 'underline',
   },
 });

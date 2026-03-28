@@ -405,6 +405,11 @@ export default function App() {
                   }}
                   isLoggedIn={isLoggedIn}
                   user={user}
+                  myPills={myPills} // 📍 이 줄을 반드시 추가해야 데이터가 넘어갑니다!
+                  refreshData={async () => {
+                    // 데이터 갱신이 필요할 때 호출할 함수 (선택사항)
+                    // 만약 useMyPills에 데이터를 다시 불러오는 함수가 있다면 여기 연결하세요.
+                  }}
                   setIsLoggedIn={setIsLoggedIn}
                   setUser={setUser}
                 />
@@ -554,13 +559,30 @@ export default function App() {
                     setAppMode(mode);
                   }}
                   onLogout={async () => {
-                    await SecureStore.deleteItemAsync('accessToken');
-                    await SecureStore.deleteItemAsync('userId');
-                    await SecureStore.deleteItemAsync('userName');
-                    await SecureStore.deleteItemAsync('userEmail');
-                    setIsLoggedIn(false);
-                    setUser(null);
-                    setAppMode('LOGIN');
+                    try {
+                      // 1. 토큰 삭제
+                      await SecureStore.deleteItemAsync('accessToken');
+                      await SecureStore.deleteItemAsync('userId');
+                      await SecureStore.deleteItemAsync('userName');
+                      await SecureStore.deleteItemAsync('userEmail');
+
+                      // 2. AsyncStorage를 안전하게 가져와서 삭제 (여기 오타 확인!)
+                      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                      await AsyncStorage.removeItem('MY_PILLS_JSON');
+
+                      // 3. 상태 초기화
+                      if (typeof saveMyPills === 'function') {
+                        await saveMyPills([]);
+                      }
+
+                      // 4. 상태 변경
+                      setIsLoggedIn(false);
+                      setUser(null);
+                      setAppMode('LOGIN');
+
+                    } catch (error) {
+                      console.error('로그아웃 중 오류:', error);
+                    }
                   }}
                 />
               );
@@ -581,6 +603,10 @@ export default function App() {
                   setAppMode={setAppMode}
                   isLoggedIn={isLoggedIn}
                   user={user}
+                  myPills={myPills}
+                  refreshData={async () => {
+                    // 데이터 갱신 로직
+                  }}
                   setIsLoggedIn={setIsLoggedIn}
                   setUser={setUser}
                 />
