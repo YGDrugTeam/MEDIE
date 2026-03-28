@@ -39,6 +39,7 @@ export const MedieChatView = ({
     onWritePost,
     myPills = [],
     pillHistory = [],
+    onPillHistoryUpdate,
 }) => {
     const [isThinking, setIsThinking] = useState(false);
     const [isListening, setIsListening] = useState(false);
@@ -380,6 +381,10 @@ export const MedieChatView = ({
                 return updated.length > 10 ? updated.slice(-10) : updated;
             });
 
+            if (data.pill_history && data.pill_history.length > 0) {
+                if (onPillHistoryUpdate) onPillHistoryUpdate(data.pill_history);
+            }
+
             // ✅ 화면 이동
             if (data.target && data.target !== 'NONE' && data.target !== 'IDLE') {
                 setTimeout(() => setAppMode(data.target), 400);
@@ -413,7 +418,9 @@ export const MedieChatView = ({
             }
 
             // ✅ IoT 확인 팝업
-            if (data.show_confirmation) setShowConfirmButtons(true);
+            if (data.show_confirmation && data.command === 'SHOW_CONFIRMATION') {
+                setShowConfirmButtons(true);
+            }
 
             // ✅ 약 검색
             if (data.command === 'SEARCH_DRUG' && data.params?.keyword) {
@@ -501,15 +508,18 @@ export const MedieChatView = ({
                 <View style={[styles.confirmBox, { bottom: confirmBottom }]}>
                     <Text style={styles.confirmTitle}>방금 약 드셨나요? 🐾</Text>
                     <View style={styles.confirmButtons}>
-                        <TouchableOpacity style={styles.yesBtn} onPress={() => {
+                        <TouchableOpacity style={styles.yesBtn} onPress={async () => {
                             setShowConfirmButtons(false);
-                            askMedie('응 먹었어!');
+                            if (onCompleteNextDose) await onCompleteNextDose();
+                            showBubbleText('복용 내역 저장했어요! 💊');
+                            setTimeout(() => hideBubble(), 2000);
                         }}>
                             <Text style={styles.btnText}>응, 먹었어! 💊</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.noBtn} onPress={() => {
                             setShowConfirmButtons(false);
-                            askMedie('아직 안 먹었어');
+                            showBubbleText('알겠어요! 나중에 알려주세요 😊');
+                            setTimeout(() => hideBubble(), 2000);
                         }}>
                             <Text style={styles.btnText}>아직 안 먹었어</Text>
                         </TouchableOpacity>

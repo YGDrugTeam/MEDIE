@@ -26,7 +26,7 @@ const COLORS = {
   border: '#C8D8B5',
 };
 
-const DEV_MOCK_PILL_SEARCH = true;
+const DEV_MOCK_PILL_SEARCH = false;
 
 const createMockPill = (pillName) => ({
   name: pillName || '타이레놀',
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   },
   resultContent: {
     paddingTop: 20,
-    paddingBottom: 160,
+    paddingBottom: 200,  // 100 → 200
   },
   resultDetailCard: {
     backgroundColor: '#FFFFFF',

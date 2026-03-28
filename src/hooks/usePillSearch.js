@@ -63,7 +63,7 @@ export default function usePillSearch({
       setShowModal(true);
 
       // 1개면 자동으로 상세로 보여줘도 편함
-      if (list.length === 1) setSelected(list[0]);
+      if (list.length >= 1) setSelected(list[0]);
     } catch (e) {
       console.error('❌ pill search failed:', e);
       Alert.alert('오류', '약 검색 중 문제가 발생했습니다.');

@@ -387,6 +387,7 @@ export default function App() {
         onWritePost={(draft) => setVoicePostDraft(draft)}
         myPills={myPills}
         pillHistory={pillHistory}
+        onPillHistoryUpdate={(newHistory) => setPillHistory(newHistory)}  // ← 추가
       />
     </SafeAreaView>
   );

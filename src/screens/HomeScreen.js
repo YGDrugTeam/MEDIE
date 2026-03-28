@@ -80,7 +80,7 @@ export default function HomeScreen({
         throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
       }
 
-      const response = await fetch('http://your-server-ip:8000/medication-logs/confirm', {
+      const response = await fetch('http://20.106.40.121/api/history', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,8 +88,8 @@ export default function HomeScreen({
         },
         body: JSON.stringify({
           user_id: user?.id,
-          pill_name: nextDose?.pillName,
-          schedule_label: nextDose?.label || nextDose?.timeLabel,
+          pill_name: nextDose?.pillName || '복약',
+          scheduled_time: nextDose?.time || '08:00',
           taken_at: new Date().toISOString(),
         })
       });
