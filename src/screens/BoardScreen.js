@@ -82,15 +82,20 @@ export default function BoardScreen({
     return String(currentUserName).trim() === String(detail.author).trim();
   }, [currentUserName, detail?.author]);
 
+  // 📍 [수정] 서버 데이터(board_type 등)와 정확히 매칭되도록 보강
   const boardTypeLabelMap = {
     free: '자유수다',
+    med_question: '복약질문',  // ← 추가
+    qna: '복약질문',
     question: '복약질문',
     review: '복용후기',
+    hospital: '복용후기',
     notice: '공지사항',
-    med_question: '복약질문',
+    support: '고객센터',
   };
 
-  const boardLabel = boardTypeLabelMap[detail?.boardType] || '커뮤니티';
+  const currentType = detail?.board_type || detail?.boardType || post?.boardType;
+  const boardLabel = boardTypeLabelMap[currentType] || '커뮤니티';
 
   const handleDelete = async () => {
     if (!detail?.id || isDeleting) return;
@@ -356,30 +361,32 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    height: 72,
-    justifyContent: 'center',
-    position: 'relative',
-    marginBottom: 4,
+    height: 64, // 마이페이지 규격과 동일하게 맞춤
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    zIndex: 1, // 📍 헤더가 전체 레이어 위로 오게 함
   },
-  backButton: {
-    position: 'absolute',
-    left: 0,
-    top: 14,
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
+
   headerTitle: {
     position: 'absolute',
     left: 0,
     right: 0,
-    top: 14,
     textAlign: 'center',
-    fontSize: 30,
+    fontSize: 22,
     fontWeight: '800',
     color: COLORS.primaryDark,
+    zIndex: -1, // 📍 텍스트를 버튼보다 '뒤'로 보내서 터치를 방해하지 않게 함
+  },
+
+  backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: -10,
+    // zIndex를 설정하지 않아도 Title이 -1이라서 잘 눌립니다!
   },
   scanButton: {
     position: 'absolute',

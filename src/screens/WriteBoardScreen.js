@@ -85,11 +85,16 @@ export default function WriteBoardScreen({
     try {
       setIsSubmitting(true);
 
+      const normalizedBoardType =
+        currentBoardType === 'question' ? 'med_question' :
+          currentBoardType === 'qna' ? 'med_question' :
+            currentBoardType;
+
       const payload = {
         title: title.trim(),
         author: author.trim(),
         content: content.trim(),
-        boardType: currentBoardType,
+        boardType: normalizedBoardType,  // ← currentBoardType에서 교체
       };
 
       let res;

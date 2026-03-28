@@ -67,8 +67,9 @@ export default function CommunityScreen({
 
   // 📍 [수정] 서버가 인식하는 boardType으로 정규화
   const normalizedBoardType = useMemo(() => {
-    if (selectedCategory === 'hospital') return 'review'; // 복용후기 -> review
-    if (selectedCategory === 'question') return 'qna';    // 복약질문 -> qna
+    if (selectedCategory === 'hospital') return 'review';    // 복용후기
+    if (selectedCategory === 'review') return 'notice';      // ← 추가! 공지사항
+    if (selectedCategory === 'question') return 'med_question';
     return selectedCategory;
   }, [selectedCategory]);
 

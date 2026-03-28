@@ -101,13 +101,21 @@ export default function SearchPillScreen({ setAppMode, initialKeyword, onSearch 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={10}
         >
+          {/* 📍 [수정] 통일된 헤더 구조: 제목 간섭 제거 + 버튼 여백 확보 */}
           <View style={styles.header}>
+            {/* 1층: 배경 중앙 제목 */}
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerTitleText}>약 검색</Text>
+            </View>
+
+            {/* 2층: 실제 버튼들 */}
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => setAppMode('HOME')}
               style={styles.backButton}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             >
-              <Ionicons name="chevron-back" size={30} color={COLORS.secondary} />
+              <Ionicons name="chevron-back" size={34} color={COLORS.secondary} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -265,26 +273,38 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+
+  // 📍 [통일] 마이페이지 규격 헤더 스타일
   header: {
-    height: 64, // 마이페이지와 동일한 높이
-    paddingHorizontal: 20,
+    height: 64,
+    paddingHorizontal: 20, // 📍 양옆 여백을 주어 버튼이 벽에 붙지 않게 함
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
+    zIndex: 1,
+  },
+  headerTitleContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: -1, // 제목이 버튼 터치를 방해하지 않음
+  },
+  headerTitleText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.primaryDark,
   },
   backButton: {
-    width: 44, // 터치 영역 확보
+    width: 44,
     height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: -10, // 마이페이지와 동일한 여백 조정
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#065809",
-    // 중앙 정렬을 위해 필요시 position: 'absolute' 사용 가능
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: -10, // 터치 영역 확보를 위한 마이너스 마진
   },
   scanButton: {
     flexDirection: 'row',
@@ -293,11 +313,17 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: COLORS.secondary,
     borderRadius: 18,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingHorizontal: 15, // 📍 내부 여백 조절
+    paddingVertical: 8,
+    marginRight: -5, // 📍 오른쪽 벽에서 살짝 떼기
   },
   scanIcon: {
     marginRight: 6,
+  },
+  scanButtonText: {
+    fontSize: 14, // 16에서 14로 살짝 줄여서 다른 페이지와 통일
+    fontWeight: '700',
+    color: COLORS.primaryDark,
   },
   scanButtonText: {
     fontSize: 16,

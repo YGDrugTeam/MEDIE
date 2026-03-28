@@ -151,22 +151,32 @@ export default function SupportMainScreen({ setAppMode, onOpenSupport }) {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
 
-        {/* 헤더 */}
+        {/* 📍 [수정] 마이페이지 규격 반영 + 터치 간섭 제거된 헤더 */}
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => setAppMode('COMMUNITY')}
-            style={styles.backButton}
-          >
-            <Ionicons name="chevron-back" size={30} color={COLORS.secondary} />
-          </TouchableOpacity>
+          {/* 1층: 배경으로 깔리는 제목 (zIndex: -1) */}
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitleText}>고객센터</Text>
+          </View>
 
-          <Text style={styles.headerTitle}>고객센터</Text>
+          {/* 2층: 실제 클릭되는 버튼들 */}
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setAppMode('MY_PAGE')} // 📍 보통 고객센터는 마이페이지에서 오니까 MY_PAGE로 연결
+              style={styles.backButton}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }} // 📍 터치 민감도 상향
+            >
+              <Ionicons name="chevron-back" size={34} color="#67A369" />
+            </TouchableOpacity>
+            {/* 로고 추가 (통일감) */}
+          </View>
 
           <TouchableOpacity
+            activeOpacity={0.8}
             onPress={() => setAppMode('SUPPORT_WRITE')}
             style={styles.writeButton}
           >
-            <Ionicons name="create-outline" size={18} color={COLORS.white} />
+            <Ionicons name="create-outline" size={20} color={COLORS.white} />
           </TouchableOpacity>
         </View>
 
@@ -207,36 +217,50 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
+  // 📍 [통일] 마이페이지 규격 헤더 스타일
   header: {
-    height: 68,
+    height: 64,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    zIndex: 1,
   },
-
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
+  headerLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
+    zIndex: 10,
   },
-
-  headerTitle: {
+  headerTitleContainer: {
     position: 'absolute',
     left: 0,
     right: 0,
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: '800',
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: -1, // 제목이 버튼 터치를 방해하지 않음
   },
-
+  headerTitleText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#065809',
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: -10,
+  },
   writeButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#67A369',
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 2,
   },
 
   ticketCard: {
