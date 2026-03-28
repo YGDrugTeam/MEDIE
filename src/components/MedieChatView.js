@@ -479,7 +479,11 @@ export const MedieChatView = ({
                     {
                         bottom: bubbleBottom,
                         opacity: bubbleOpacity,
-                        transform: [{ scale: bubbleScale }],
+                        transform: [
+                            { scale: bubbleScale },
+                            { translateX: panRef.x },
+                            { translateY: Animated.multiply(panRef.y, -1) },
+                        ],
                     },
                 ]}>
                     {bubbleText === 'THINKING' ? (
