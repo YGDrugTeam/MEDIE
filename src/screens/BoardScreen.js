@@ -341,24 +341,6 @@ export default function BoardScreen({
             <Text style={styles.secondaryBtnText}>목록으로</Text>
           </TouchableOpacity>
         </ScrollView>
-
-        <View style={styles.bottomBar}>
-          <TouchableOpacity onPress={() => setAppMode('HOME')} style={styles.bottomTabItem}>
-            <Ionicons name="home" size={28} color={COLORS.secondary} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setAppMode('MAP')} style={styles.bottomTabItem}>
-            <Ionicons name="location" size={28} color={COLORS.secondary} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setAppMode('SEARCH_PILL')} style={styles.bottomTabItem}>
-            <Ionicons name="search" size={28} color={COLORS.secondary} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setAppMode('COMMUNITY')} style={styles.bottomTabItem}>
-            <Ionicons name="chatbubble-ellipses" size={28} color={COLORS.secondary} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setAppMode('MYPAGE')} style={styles.bottomTabItem}>
-            <Ionicons name="person" size={28} color={COLORS.secondary} />
-          </TouchableOpacity>
-        </View>
       </View>
     </SafeAreaView>
   );
@@ -602,24 +584,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#555',
     textAlign: 'center',
-  },
-
-  bottomBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 60,
-    backgroundColor: COLORS.warm,
-    borderTopWidth: 1,
-    borderTopColor: '#DCE8C8',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  bottomTabItem: {
-    width: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

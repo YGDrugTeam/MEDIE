@@ -103,48 +103,7 @@ export default function MyPillScreen({
     </View>
   );
 
-  const renderBottomBar = () => (
-    <View style={styles.bottomBar}>
-      <TouchableOpacity
-        onPress={() => setAppMode?.('HOME')}
-        style={styles.bottomTabItem}
-      >
-        <Ionicons name="home" size={28} color={COLORS.secondary} />
-      </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={() => setAppMode?.('MY_PILL')}
-        style={styles.bottomTabItem}
-      >
-        <Ionicons name="add-circle" size={28} color={COLORS.primary} />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => setAppMode?.('SEARCH_PILL')}
-        style={styles.bottomTabItem}
-      >
-        <Ionicons name="search" size={28} color={COLORS.secondary} />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => setAppMode?.('COMMUNITY')}
-        style={styles.bottomTabItem}
-      >
-        <Ionicons
-          name="chatbubble-ellipses"
-          size={28}
-          color={COLORS.secondary}
-        />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => setAppMode?.('MY_PAGE')}
-        style={styles.bottomTabItem}
-      >
-        <Ionicons name="person" size={28} color={COLORS.secondary} />
-      </TouchableOpacity>
-    </View>
-  );
 
   if (selectedPill) {
     return (
@@ -210,8 +169,6 @@ export default function MyPillScreen({
 
           <View style={styles.bottomSpacer} />
         </ScrollView>
-
-        {renderBottomBar()}
       </SafeAreaView>
     );
   }
@@ -281,8 +238,6 @@ export default function MyPillScreen({
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-
-      {renderBottomBar()}
     </SafeAreaView>
   );
 }
@@ -588,23 +543,4 @@ const styles = StyleSheet.create({
     height: 70,
   },
 
-  bottomBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 60,
-    backgroundColor: COLORS.warm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-
-  bottomTabItem: {
-    width: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store'; // 📍 토큰을 가져오기 위해 필요
+import * as SecureStore from 'expo-secure-store';
 
 import MASCOT_IMG from '/Users/lifeiscabaret/Final-Project/LastMobileApp/assets/MASCOT_IMG.png';
 import CAMERA_ICON from '/Users/lifeiscabaret/Final-Project/LastMobileApp/assets/camera.png';
@@ -33,7 +33,6 @@ export default function HomeScreen({
   const [loading, setLoading] = useState(false);
   const userName = user?.nickname || user?.name || '사용자';
 
-  // 📍 기능 보완 1: 다양한 데이터 구조 대응 (필드명 유연화)
   const { hasPills, nextDose, isAllCompleted } = useMemo(() => {
     const pillExists = Array.isArray(myPills) && myPills.length > 0;
 
@@ -47,7 +46,6 @@ export default function HomeScreen({
         ...sch,
         pillName: pill.name,
         pillId: pill.id,
-        // 📍 서버/로컬 데이터 필드명이 달라도 동작하게 보완
         isTaken: sch.takenToday === true || sch.completed === true || sch.is_taken === true
       }));
     });
@@ -63,7 +61,6 @@ export default function HomeScreen({
     return { hasPills: true, nextDose: next, isAllCompleted: allDone };
   }, [myPills]);
 
-  // 📍 기능 보완 2: API 호출 및 인증 문제 해결
   const handleMainAction = async () => {
     if (!hasPills) {
       setAppMode('SCAN');
@@ -77,24 +74,22 @@ export default function HomeScreen({
 
     setLoading(true);
     try {
-      // 📍 SecureStore에서 실제 로그인 토큰 가져오기 (Invalid JWT 방지)
       const token = await SecureStore.getItemAsync('accessToken');
 
       if (!token) {
         throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
       }
 
-      // 📍 백엔드 주소 (App.js의 API_BASE 활용 권장)
       const response = await fetch('http://your-server-ip:8000/medication-logs/confirm', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // 'Bearer ' 띄어쓰기 확인
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           user_id: user?.id,
           pill_name: nextDose?.pillName,
-          schedule_label: nextDose?.label || nextDose?.timeLabel, // 필드명 보완
+          schedule_label: nextDose?.label || nextDose?.timeLabel,
           taken_at: new Date().toISOString(),
         })
       });
@@ -107,7 +102,6 @@ export default function HomeScreen({
         throw new Error(errorData.message || '서버 응답 오류');
       }
     } catch (e) {
-      // 📍 에러 메시지 구체화
       Alert.alert('오류', e.message === 'Failed to fetch' ? '서버 연결 실패 (IP 확인 필요)' : e.message);
     } finally {
       setLoading(false);
@@ -117,7 +111,6 @@ export default function HomeScreen({
   const renderButtonContent = () => {
     if (!hasPills) return "복용약 설정하러 가기";
     if (isAllCompleted) return "복용 완료";
-    // 📍 undefined 방지: label이 없으면 time이라도 표시
     const label = nextDose?.label || nextDose?.timeLabel || nextDose?.time || '다음';
     return `${label} 복용 완료 >`;
   };
@@ -179,38 +172,12 @@ export default function HomeScreen({
             <Text style={screenStyles.pillCardFooterText}>상세정보 전체보기 →</Text>
           </View>
         </TouchableOpacity>
-
-        <View style={{ flex: 1 }} />
-
-        <View style={screenStyles.tabBar}>
-          <TouchableOpacity style={screenStyles.tabItem} onPress={() => setAppMode('HOME')}>
-            <Ionicons name="home" size={28} color="#065809" />
-            <Text style={screenStyles.tabLabel}>홈</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={screenStyles.tabItem} onPress={onPressMap}>
-            <Ionicons name="location" size={28} color="#065809" />
-            <Text style={screenStyles.tabLabel}>약국</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={screenStyles.tabItem} onPress={() => setAppMode('SEARCH_PILL')}>
-            <Ionicons name="search" size={28} color="#065809" />
-            <Text style={screenStyles.tabLabel}>검색</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={screenStyles.tabItem} onPress={() => setAppMode('COMMUNITY')}>
-            <Ionicons name="chatbubble-ellipses" size={28} color="#065809" />
-            <Text style={screenStyles.tabLabel}>톡톡</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={screenStyles.tabItem} onPress={() => setAppMode('MY_PAGE')}>
-            <Ionicons name="person" size={28} color="#065809" />
-            <Text style={screenStyles.tabLabel}>마이</Text>
-          </TouchableOpacity>
-        </View>
       </View>
     </SafeAreaView>
   );
 }
 
 const screenStyles = StyleSheet.create({
-  // 스타일은 요청하신 대로 건드리지 않고 그대로 유지했습니다.
   safeArea: { flex: 1, backgroundColor: '#FCFFF9' },
   fixedContent: { flex: 1, paddingHorizontal: 22, paddingTop: 10 },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
@@ -222,7 +189,7 @@ const screenStyles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '800', color: '#065809', lineHeight: 36 },
   subtitle: { fontSize: 16, color: '#67A369', marginTop: 8 },
   ctaButton: { width: '100%', height: 90, backgroundColor: '#67A369', borderRadius: 20, marginTop: 20, justifyContent: 'center', alignItems: 'center', elevation: 5 },
-  ctaButtonDone: { backgroundColor: '#4CAF50' },
+  ctaButtonDone: { backgroundColor: '#67A369' },
   ctaInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' },
   ctaIcon: { width: 50, height: 68, marginRight: 10 },
   ctaText: { fontSize: 24, fontWeight: '800', color: '#fff' },
@@ -237,9 +204,7 @@ const screenStyles = StyleSheet.create({
   pillRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
   pillName: { fontSize: 20, fontWeight: '700', color: '#065809', flex: 1 },
   pillUsage: { fontSize: 18, color: '#67A369', fontWeight: '600' },
+  emptyText: { fontSize: 15, color: '#8C8C8C', textAlign: 'center', paddingVertical: 10 },
   pillCardFooter: { height: 52, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center' },
   pillCardFooterText: { fontSize: 14, color: '#8C8C8C', fontWeight: '600' },
-  tabBar: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', backgroundColor: '#fff', height: 85, borderRadius: 25, marginBottom: Platform.OS === 'ios' ? 0 : 15, elevation: 12 },
-  tabItem: { alignItems: 'center' },
-  tabLabel: { fontSize: 12, fontWeight: '800', color: '#065809', marginTop: 4 },
 });

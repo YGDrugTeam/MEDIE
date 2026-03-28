@@ -31,27 +31,6 @@ const COLORS = {
   chipActive: '#A9D18E',
   tabBg: '#EAF4E3',
 };
-const DEV_MOCK_COMMUNITY = false;  // true → false
-
-const MOCK_POSTS = [
-  {
-    id: 1001,
-    title: '타이레놀 효과 좋나요?',
-    author: '약잘알',
-    created_at: '2026-04-22T09:00:00',
-    views: 120,
-    likes: 23,
-  },
-  {
-    id: 1002,
-    title: 'OO약 쓸 때 주의해야 할 점',
-    author: '약잘알',
-    created_at: '2026-04-23T10:30:00',
-    views: 95,
-    likes: 18,
-  },
-];
-
 
 const CATEGORY_ITEMS = [
   { key: 'free', label: '자유수다', icon: '💊' },
@@ -86,34 +65,24 @@ export default function CommunityScreen({
 
   const isBoardCategory = selectedCategory !== 'support';
 
+  // 📍 [수정] 서버가 인식하는 boardType으로 정규화
   const normalizedBoardType = useMemo(() => {
-    if (selectedCategory === 'hospital') return 'question';
+    if (selectedCategory === 'hospital') return 'review'; // 복용후기 -> review
+    if (selectedCategory === 'question') return 'qna';    // 복약질문 -> qna
     return selectedCategory;
   }, [selectedCategory]);
 
   const getBoardUrl = useCallback(() => {
     const boardType = normalizedBoardType;
-
     if (selectedTab === 'latest') {
       return `${BOARD_API_BASE}/boards/type/${boardType}`;
     }
-
     return `${BOARD_API_BASE}/boards/type/${boardType}/${selectedTab}`;
   }, [normalizedBoardType, selectedTab]);
 
   const fetchBoards = useCallback(async () => {
-    if (DEV_MOCK_COMMUNITY) {
-      setPosts(MOCK_POSTS);
-      setIsLoading(false);
-      setIsRefreshing(false);
-      return;
-    }
-
-
-
     try {
       setIsLoading(true);
-
       let url = getBoardUrl();
       let res = await fetch(url);
 
@@ -123,19 +92,16 @@ export default function CommunityScreen({
       }
 
       const text = await res.text();
-
       let data;
       try {
         data = JSON.parse(text);
       } catch (err) {
-        console.error('응답 원문:', text);
-        throw new Error('서버가 JSON이 아닌 응답을 반환했습니다.');
+        throw new Error('서버 응답 형식이 올바르지 않습니다.');
       }
 
       if (!res.ok) {
-        throw new Error(data?.detail || data?.error || '게시글 목록 조회 실패');
+        throw new Error(data?.detail || data?.error || '목록 조회 실패');
       }
-
       setPosts(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error('❌ fetchBoards 실패:', e);
@@ -144,7 +110,7 @@ export default function CommunityScreen({
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [getBoardUrl, isBoardCategory, normalizedBoardType, selectedTab]);
+  }, [getBoardUrl, normalizedBoardType, selectedTab]);
 
   useEffect(() => {
     fetchBoards();
@@ -161,7 +127,6 @@ export default function CommunityScreen({
       setAppMode('SUPPORT');
       return;
     }
-
     setSelectedCategory(categoryKey);
     setSelectedTab('recommend');
     setSearchKeyword('');
@@ -169,58 +134,27 @@ export default function CommunityScreen({
 
   const handlePressWrite = () => {
     if (!isBoardCategory) {
-      Alert.alert('안내', '고객센터는 고객센터 화면에서 작성해주세요.');
+      Alert.alert('안내', '고객센터는 전용 화면을 이용해주세요.');
       return;
     }
-
     if (typeof setWriteBoardType === 'function') {
       setWriteBoardType(normalizedBoardType);
     }
     setAppMode('WRITE_BOARD');
   };
 
-  const handlePressSearch = () => {
-    if (!isBoardCategory) {
-      Alert.alert('안내', '고객센터는 별도 화면에서 검색 또는 확인해주세요.');
-      return;
-    }
-    setIsSearchOpen(true);
-  };
-
   const handleSearch = async () => {
-    if (!searchKeyword.trim()) {
-      Alert.alert('입력 확인', '검색어를 입력해주세요.');
-      return;
-    }
-
+    if (!searchKeyword.trim()) return;
     try {
       setIsSearching(true);
-
-
-      const url =
-        `${BOARD_API_BASE}/boards/search?q=${encodeURIComponent(searchKeyword.trim())}` +
-        `&board_type=${encodeURIComponent(normalizedBoardType)}`;
-
+      const url = `${BOARD_API_BASE}/boards/search?q=${encodeURIComponent(searchKeyword.trim())}&board_type=${encodeURIComponent(normalizedBoardType)}`;
       const res = await fetch(url);
-      const text = await res.text();
-
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (err) {
-        console.error('검색 응답 원문:', text);
-        throw new Error('서버가 JSON이 아닌 응답을 반환했습니다.');
-      }
-
-      if (!res.ok) {
-        throw new Error(data?.detail || data?.error || '게시글 검색 실패');
-      }
-
+      const data = await res.json();
+      if (!res.ok) throw new Error('검색 실패');
       setPosts(Array.isArray(data) ? data : []);
       setIsSearchOpen(false);
     } catch (e) {
-      console.error('❌ searchBoards 실패:', e);
-      Alert.alert('오류', '게시글 검색에 실패했습니다.');
+      Alert.alert('오류', '검색에 실패했습니다.');
     } finally {
       setIsSearching(false);
     }
@@ -240,36 +174,23 @@ export default function CommunityScreen({
     >
       <View style={styles.postCardInner}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.postTitle} numberOfLines={1}>
-            {item.title}
-          </Text>
-
+          <Text style={styles.postTitle} numberOfLines={1}>{item.title}</Text>
           <Text style={styles.postMeta} numberOfLines={1}>
-            {item.author || '작성자 없음'} ・{' '}
-            {item.created_at ? item.created_at.slice(0, 10) : ''}
+            {item.author || '익명'} ・ {item.created_at ? item.created_at.slice(0, 10) : ''}
           </Text>
-
           <View style={styles.postStatsRow}>
             <View style={styles.statItem}>
               <Ionicons name="eye" size={16} color="#A9C68A" />
               <Text style={styles.statText}>{item.views ?? 0}</Text>
             </View>
-
             <View style={styles.statDivider} />
-
             <View style={styles.statItem}>
               <Ionicons name="heart" size={16} color="#B9D49D" />
               <Text style={styles.statText}>{item.likes ?? 0}</Text>
             </View>
           </View>
         </View>
-
-        <Ionicons
-          name="chevron-forward"
-          size={30}
-          color="#B6CFA7"
-          style={styles.postChevron}
-        />
+        <Ionicons name="chevron-forward" size={30} color="#B6CFA7" />
       </View>
     </TouchableOpacity>
   );
@@ -277,541 +198,171 @@ export default function CommunityScreen({
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* 상단 - 네 피그마 기준 */}
+        {/* 📍 [수정] 헤더 구조: 제목이 버튼을 가리지 않도록 층을 나눔 */}
         <View style={styles.header}>
+          {/* 1층: 배경처럼 깔리는 중앙 제목 */}
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitleText}>커뮤니티</Text>
+          </View>
+
+          {/* 2층: 실제 클릭되는 버튼들 */}
           <TouchableOpacity
-            activeOpacity={0.8}
             onPress={() => setAppMode('HOME')}
             style={styles.backButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // 📍 터치 민감도 상향
           >
             <Ionicons name="chevron-back" size={34} color={COLORS.secondary} />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>커뮤니티</Text>
-
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setAppMode('SCAN')}
-            style={styles.scanButton}
-          >
-            <Ionicons
-              name="camera-outline"
-              size={18}
-              color={COLORS.secondary}
-              style={{ marginRight: 6 }}
-            />
+          <TouchableOpacity onPress={() => setAppMode('SCAN')} style={styles.scanButton}>
+            <Ionicons name="camera-outline" size={18} color={COLORS.secondary} style={{ marginRight: 6 }} />
             <Text style={styles.scanButtonText}>약 스캔</Text>
           </TouchableOpacity>
         </View>
 
-        {/* 카테고리 - 가로 스크롤, 고객센터 포함 */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryScrollContent}
-          style={styles.categoryScroll}
-        >
-          {CATEGORY_ITEMS.map((category) => {
-            const isSelected = selectedCategory === category.key;
-
-            return (
-              <TouchableOpacity
-                key={category.key}
-                activeOpacity={0.85}
-                onPress={() => handleCategoryPress(category.key)}
-                style={[
-                  styles.categoryChip,
-                  isSelected && styles.categoryChipActive,
-                ]}
-              >
-                <Text style={styles.categoryIcon}>{category.icon}</Text>
-                <Text
-                  style={[
-                    styles.categoryLabel,
-                    isSelected && styles.categoryLabelActive,
-                  ]}
+        {/* 📍 [수정] 카테고리 영역 높이 고정으로 레이아웃 밀림 해결 */}
+        <View style={styles.categoryContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryScrollContent}
+          >
+            {CATEGORY_ITEMS.map((category) => {
+              const isSelected = selectedCategory === category.key;
+              return (
+                <TouchableOpacity
+                  key={category.key}
+                  onPress={() => handleCategoryPress(category.key)}
+                  style={[styles.categoryChip, isSelected && styles.categoryChipActive]}
                 >
-                  {category.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+                  <Text style={styles.categoryIcon}>{category.icon}</Text>
+                  <Text style={[styles.categoryLabel, isSelected && styles.categoryLabelActive]}>
+                    {category.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
 
-        {/* 정렬 탭 */}
         <View style={styles.tabOuter}>
-          {[
-            { key: 'recommend', label: '추천' },
-            { key: 'latest', label: '최신' },
-            { key: 'popular', label: '인기' },
-          ].map((tab) => {
-            const isSelected = selectedTab === tab.key;
-
+          {['recommend', 'latest', 'popular'].map((key) => {
+            const labels = { recommend: '추천', latest: '최신', popular: '인기' };
+            const isSelected = selectedTab === key;
             return (
               <TouchableOpacity
-                key={tab.key}
-                activeOpacity={0.85}
-                onPress={() => setSelectedTab(tab.key)}
+                key={key}
+                onPress={() => setSelectedTab(key)}
                 style={[styles.tabBtn, isSelected && styles.tabBtnActive]}
               >
-                <Text
-                  style={[styles.tabText, isSelected && styles.tabTextActive]}
-                >
-                  {tab.label}
-                </Text>
+                <Text style={[styles.tabText, isSelected && styles.tabTextActive]}>{labels[key]}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* 리스트 */}
         {isLoading ? (
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={COLORS.primaryDark} />
-            <Text style={styles.loadingText}>게시글을 불러오는 중...</Text>
           </View>
         ) : (
           <FlatList
             data={posts}
-            keyExtractor={(item, index) =>
-              item?.id ? String(item.id) : `${item.title}-${index}`
-            }
+            keyExtractor={(item, index) => item?.id ? String(item.id) : String(index)}
             renderItem={renderPostItem}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.listContent}
-            refreshControl={
-              <RefreshControl
-                refreshing={isRefreshing}
-                onRefresh={handleRefresh}
-                tintColor={COLORS.primaryDark}
-              />
-            }
-            ListHeaderComponent={<View style={{ borderTopWidth: 1, borderColor: COLORS.greenLine }} />}
-            ListEmptyComponent={
-              <View style={styles.emptyWrap}>
-                <Text style={styles.emptyText}>등록된 게시글이 없습니다.</Text>
-              </View>
-            }
+            refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
+            ListEmptyComponent={<View style={styles.emptyWrap}><Text style={styles.emptyText}>게시글이 없습니다.</Text></View>}
           />
         )}
 
-        {/* 글쓰기 버튼 */}
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={handlePressWrite}
-          style={styles.writeFab}
-        >
-          <Ionicons
-            name="pencil"
-            size={18}
-            color="#FFFFFF"
-            style={{ marginRight: 6 }}
-          />
+        <TouchableOpacity onPress={handlePressWrite} style={styles.writeFab}>
+          <Ionicons name="pencil" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
           <Text style={styles.writeFabText}>글쓰기</Text>
         </TouchableOpacity>
-
-        {/* 하단바 - 약검색과 동일 톤, 두번째는 위치 아이콘 */}
-        <View style={styles.bottomBar}>
-          <TouchableOpacity
-            onPress={() => setAppMode('HOME')}
-            style={styles.bottomTabItem}
-          >
-            <Ionicons name="home" size={28} color={COLORS.secondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setAppMode('MAP')}
-            style={styles.bottomTabItem}
-          >
-            <Ionicons name="location" size={28} color={COLORS.secondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setAppMode('SEARCH_PILL')}
-            style={styles.bottomTabItem}
-          >
-            <Ionicons name="search" size={28} color={COLORS.secondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setAppMode('COMMUNITY')}
-            style={styles.bottomTabItem}
-          >
-            <Ionicons
-              name="chatbubble-ellipses"
-              size={28}
-              color={COLORS.secondary}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setAppMode('MYPAGE')}
-            style={styles.bottomTabItem}
-          >
-            <Ionicons name="person" size={28} color={COLORS.secondary} />
-          </TouchableOpacity>
-        </View>
       </View>
 
-      {/* 검색 모달 */}
-      <Modal
-        visible={isSearchOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsSearchOpen(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>게시글 검색</Text>
-
-            <Text style={styles.modalSub}>
-              현재 게시판: {selectedCategoryInfo.label}
-            </Text>
-
-            <TextInput
-              value={searchKeyword}
-              onChangeText={setSearchKeyword}
-              placeholder="제목, 내용, 작성자를 검색하세요"
-              placeholderTextColor={COLORS.muted}
-              autoFocus
-              style={styles.modalInput}
-            />
-
-            <View style={styles.modalBtnRow}>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => setIsSearchOpen(false)}
-                style={styles.cancelBtn}
-              >
-                <Text style={styles.cancelBtnText}>취소</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={handleSearch}
-                disabled={isSearching}
-                style={[
-                  styles.searchBtn,
-                  isSearching && { opacity: 0.7 },
-                ]}
-              >
-                <Text style={styles.searchBtnText}>
-                  {isSearching ? '검색 중...' : '검색'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={handleResetSearch}
-              style={{
-                marginTop: 12,
-                alignSelf: 'flex-end',
-              }}
-            >
-              <Text
-                style={{
-                  color: COLORS.subText,
-                  fontWeight: '700',
-                }}
-              >
-                전체 목록으로
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      {/* 📍 [삭제] 중복 하단바 코드 제거됨 (App.js에서 관리) */}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    paddingHorizontal: 20,
-    paddingTop: 6,
-  },
+  safeArea: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: COLORS.background, paddingHorizontal: 20 },
 
+  // 📍 [수정] 마이페이지 규격 반영 + 터치 간섭 제거
   header: {
-    height: 68,
-    flexDirection: 'row',
+    height: 64,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    zIndex: 1, // 헤더가 위로 오게 함
+  },
+  headerTitleContainer: {
+    position: 'absolute', // 📍 제목을 바닥에 깔아서 버튼 터치를 방해하지 않게 함
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    zIndex: -1, // 📍 버튼보다 뒤로 보냄
+  },
+  headerTitleText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#065809",
   },
   backButton: {
     width: 44,
     height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 14,
-    textAlign: 'center',
-    fontSize: 30,
-    fontWeight: '800',
-    color: COLORS.primaryDark,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: -10,
+    backgroundColor: 'transparent', // 📍 영역 확인용 (필요시 색상 넣어보세요)
   },
   scanButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: COLORS.secondary,
     borderRadius: 18,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
   },
-  scanButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.primaryDark,
-  },
+  scanButtonText: { fontSize: 14, fontWeight: '700', color: COLORS.primaryDark },
 
-  categoryScroll: {
-    marginTop: 14,
-    maxHeight: 54,
-  },
-  categoryScrollContent: {
-    paddingRight: 8,
-  },
-  categoryChip: {
-    height: 42,
-    paddingHorizontal: 16,
-    marginRight: 10,
-    borderRadius: 999,
-    borderWidth: 1.2,
-    borderColor: '#D9E7D0',
-    backgroundColor: COLORS.chipBg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  categoryChipActive: {
-    backgroundColor: COLORS.chipActive,
-    borderColor: COLORS.chipActive,
-  },
-  categoryIcon: {
-    fontSize: 16,
-    marginRight: 6,
-  },
-  categoryLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#4A5E43',
-  },
-  categoryLabelActive: {
-    color: '#FFFFFF',
-  },
+  // 📍 [수정] 높이 고정 컨테이너
+  categoryContainer: { height: 60, marginTop: 10 },
+  categoryScrollContent: { paddingRight: 8, alignItems: 'center' },
+  categoryChip: { height: 42, paddingHorizontal: 16, marginRight: 10, borderRadius: 21, borderWidth: 1.2, borderColor: '#D9E7D0', backgroundColor: '#FFF', flexDirection: 'row', alignItems: 'center' },
+  categoryChipActive: { backgroundColor: COLORS.chipActive, borderColor: COLORS.chipActive },
+  categoryIcon: { fontSize: 16, marginRight: 6 },
+  categoryLabel: { fontSize: 14, fontWeight: '700', color: '#4A5E43' },
+  categoryLabelActive: { color: '#FFFFFF' },
 
-  tabOuter: {
-    marginTop: 16,
-    marginBottom: 16,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    backgroundColor: COLORS.tabBg,
-    borderRadius: 999,
-    padding: 4,
-    minWidth: 220,
-  },
-  tabBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 26,
-    borderRadius: 999,
-  },
-  tabBtnActive: {
-    backgroundColor: '#FFFFFF',
-  },
-  tabText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#6E8067',
-  },
-  tabTextActive: {
-    color: COLORS.primaryDark,
-    fontWeight: '800',
-  },
+  tabOuter: { marginTop: 10, marginBottom: 15, alignSelf: 'center', flexDirection: 'row', backgroundColor: COLORS.tabBg, borderRadius: 25, padding: 4, width: '100%' },
+  tabBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 21 },
+  tabBtnActive: { backgroundColor: '#FFFFFF', elevation: 2 },
+  tabText: { fontSize: 14, fontWeight: '600', color: '#6E8067' },
+  tabTextActive: { color: COLORS.primaryDark, fontWeight: '800' },
 
-  listContent: {
-    paddingBottom: 140,
-  },
-  postCard: {
-    marginBottom: 16,
-    borderRadius: 24,
-    backgroundColor: COLORS.cardBg,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  postCardInner: {
-    minHeight: 124,
-    borderRadius: 24,
-    paddingHorizontal: 22,
-    paddingVertical: 22,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  postTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: COLORS.primaryDark,
-    marginBottom: 12,
-  },
-  postMeta: {
-    fontSize: 13,
-    color: '#7D8A75',
-    marginBottom: 14,
-  },
-  postStatsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statText: {
-    marginLeft: 6,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#7A8E6F',
-  },
-  statDivider: {
-    width: 1,
-    height: 14,
-    backgroundColor: '#D9E7D0',
-    marginHorizontal: 12,
-  },
-  postChevron: {
-    marginLeft: 10,
-  },
-
-  loadingWrap: {
-    flex: 1,
-    marginTop: 40,
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    color: COLORS.muted,
-  },
-  emptyWrap: {
-    marginTop: 40,
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: COLORS.muted,
-  },
-
-  writeFab: {
-    position: 'absolute',
-    right: 22,
-    bottom: 122,
-    backgroundColor: '#A9D18E',
-    borderRadius: 999,
-    paddingHorizontal: 22,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-    zIndex: 3,
-  },
-  writeFabText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 18,
-  },
-
-  bottomBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 60,
-    backgroundColor: COLORS.warm,
-    borderTopWidth: 1,
-    borderTopColor: '#DCE8C8',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  bottomTabItem: {
-    width: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.28)',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  modalCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 19,
-    fontWeight: '800',
-    color: COLORS.primaryDark,
-    marginBottom: 10,
-  },
-  modalSub: {
-    fontSize: 13,
-    color: COLORS.muted,
-    marginBottom: 12,
-  },
-  modalInput: {
-    backgroundColor: '#F8FBF5',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    borderWidth: 1,
-    borderColor: '#DFEADB',
-    color: '#111',
-    marginBottom: 14,
-  },
-  modalBtnRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  cancelBtn: {
-    flex: 1,
-    backgroundColor: '#B8B8B8',
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  cancelBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  searchBtn: {
-    flex: 1,
-    backgroundColor: COLORS.secondary,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  searchBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
+  listContent: { paddingBottom: 100 },
+  postCard: { marginBottom: 16, borderRadius: 24, backgroundColor: '#FFF', elevation: 3, shadowOpacity: 0.05 },
+  postCardInner: { padding: 20, flexDirection: 'row', alignItems: 'center' },
+  postTitle: { fontSize: 18, fontWeight: '800', color: COLORS.primaryDark, marginBottom: 8 },
+  postMeta: { fontSize: 12, color: '#7D8A75', marginBottom: 10 },
+  postStatsRow: { flexDirection: 'row', alignItems: 'center' },
+  statItem: { flexDirection: 'row', alignItems: 'center' },
+  statText: { marginLeft: 5, fontSize: 12, color: '#7A8E6F' },
+  statDivider: { width: 1, height: 12, backgroundColor: '#EEE', marginHorizontal: 10 },
+  writeFab: { position: 'absolute', right: 20, bottom: 30, backgroundColor: '#A9D18E', borderRadius: 30, paddingHorizontal: 20, paddingVertical: 15, flexDirection: 'row', alignItems: 'center', elevation: 5 },
+  writeFabText: { color: '#FFF', fontWeight: '800', fontSize: 16 },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptyWrap: { flex: 1, alignItems: 'center', marginTop: 50 },
+  emptyText: { color: COLORS.muted }
 });

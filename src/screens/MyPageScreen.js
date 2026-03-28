@@ -68,7 +68,8 @@ export default function MyPageScreen({
         {
             title: "앱 정보",
             desc: "서비스 소개와 팀 정보를 확인해요",
-            onPress: () => { },
+            // 📍 여기를 수정합니다! 
+            onPress: () => onNavigate?.("APP_INFO"),
         },
     ];
 
@@ -97,9 +98,14 @@ export default function MyPageScreen({
                 {/* 프로필 카드 */}
                 <View style={styles.profileCard}>
                     <View style={styles.profileAvatar}>
-                        <Text style={styles.profileAvatarText}>
-                            {nickname?.slice(0, 1) || "M"}
-                        </Text>
+                        {/* 📍 수정 포인트: 사진이 있으면 Image, 없으면 첫 글자 텍스트 */}
+                        {user?.profileImage ? (
+                            <Image source={{ uri: user.profileImage }} style={styles.profileAvatarImg} />
+                        ) : (
+                            <Text style={styles.profileAvatarText}>
+                                {nickname?.slice(0, 1) || "M"}
+                            </Text>
+                        )}
                     </View>
 
                     <View style={styles.profileTextBox}>
@@ -161,44 +167,6 @@ export default function MyPageScreen({
                     <Text style={styles.footerText}>© 2026 care-flow. All rights reserved.</Text>
                 </View>
             </ScrollView>
-
-            {/* 하단 탭바 */}
-            <View style={styles.bottomBar}>
-                <TouchableOpacity
-                    onPress={() => onNavigate?.('HOME')}
-                    style={styles.bottomTabItem}
-                >
-                    <Ionicons name="home" size={28} color="#67A369" />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    onPress={() => onNavigate?.('MAP')}
-                    style={styles.bottomTabItem}
-                >
-                    <Ionicons name="location" size={28} color="#67A369" />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    onPress={() => onNavigate?.('SEARCH_PILL')}
-                    style={styles.bottomTabItem}
-                >
-                    <Ionicons name="search" size={28} color="#67A369" />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    onPress={() => onNavigate?.('COMMUNITY')}
-                    style={styles.bottomTabItem}
-                >
-                    <Ionicons name="chatbubble-ellipses" size={28} color="#67A369" />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    onPress={() => onNavigate?.('MY_PAGE')}
-                    style={styles.bottomTabItem}
-                >
-                    <Ionicons name="person" size={28} color="#065809" />
-                </TouchableOpacity>
-            </View>
         </SafeAreaView>
     );
 }
@@ -432,23 +400,9 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
 
-    bottomBar: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height: 60,
-        backgroundColor: '#FFFDE7',
-        borderTopWidth: 1,
-        borderTopColor: '#DCE8C8',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-around',
-    },
-
-    bottomTabItem: {
-        width: 48,
-        alignItems: 'center',
-        justifyContent: 'center',
+    profileAvatarImg: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
     },
 });

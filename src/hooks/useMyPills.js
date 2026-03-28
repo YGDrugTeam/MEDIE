@@ -1,7 +1,7 @@
-// src/hooks/useMyPills.js
 import { useEffect, useState, useCallback } from 'react';
 import { Alert, Platform } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+// 📍 SecureStore 대신 AsyncStorage를 사용합니다.
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 
 const DEFAULT_STORAGE_KEY = 'MY_PILLS_JSON';
@@ -58,11 +58,7 @@ async function cancelIfExists(id) {
   } catch { }
 }
 
-/**
- * ✅ "중복 방지" 버전: 매일 알람(daily) 1개만 등록
- * - Android: { type:'daily', hour, minute, channelId, repeats:true }
- * - iOS: { hour, minute, repeats:true }
- */
+/** ✅ 매일 알람 등록 */
 export async function scheduleDailyAlarm({ pillName, time, soundOn, vibrationOn }) {
   const { hour, minute } = parseTimeOrThrow(time);
 
@@ -84,9 +80,12 @@ export async function scheduleDailyAlarm({ pillName, time, soundOn, vibrationOn 
       };
   return Notifications.scheduleNotificationAsync({
     content: {
-      title: '💊 복약 알림',
-      body: `${pillName ?? '복약'} 복용할 시간이에요`,
-      sound: soundOn ? 'default' : undefined,
+      title: '⏰ 약 복용 시간입니다!',
+      body: `${pillName} 드실 시간이에요. 메디멍이 기다리고 있어요! 🐶`,
+      sound: 'default',
+      priority: Notifications.AndroidImportance.MAX, // 안드로이드에서 가장 높은 우선순위
+      vibrationPattern: [0, 500, 250, 500], // 강력한 진동 패턴
+      categoryIdentifier: 'pill-reminder',
     },
     trigger,
   });
@@ -99,13 +98,16 @@ export default function useMyPills({
 } = {}) {
   const [myPills, setMyPills] = useState([]);
 
+  // 📍 [수정] SecureStore -> AsyncStorage 교체
   const saveMyPills = useCallback(
     async (list) => {
       const safe = Array.isArray(list) ? list : [];
       setMyPills(safe);
 
       try {
-        await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(safe));
+        const jsonValue = JSON.stringify(safe);
+        await AsyncStorage.setItem(STORAGE_KEY, jsonValue);
+        console.log("✅ 데이터 저장 성공 (AsyncStorage)");
       } catch (e) {
         console.error('❌ myPills save 실패:', e);
         Alert.alert('저장 오류', '내 복용약 저장 중 문제가 발생했습니다.');
@@ -115,10 +117,11 @@ export default function useMyPills({
     [STORAGE_KEY]
   );
 
+  // 📍 [수정] 불러오기 로직도 AsyncStorage로 교체
   useEffect(() => {
     (async () => {
       try {
-        const json = await SecureStore.getItemAsync(STORAGE_KEY);
+        const json = await AsyncStorage.getItem(STORAGE_KEY);
         if (!json) {
           setMyPills([]);
           return;
@@ -127,19 +130,15 @@ export default function useMyPills({
         setMyPills(Array.isArray(parsed) ? parsed : []);
       } catch (e) {
         console.error('❌ myPills load 실패:', e);
-        try {
-          await SecureStore.deleteItemAsync(STORAGE_KEY);
-        } catch { }
         setMyPills([]);
       }
     })();
   }, [STORAGE_KEY]);
 
-  /** ✅ 스케줄 없으면 기본 08:00 생성 (ALARM 화면 진입용) */
   const ensurePillSchedule = useCallback(
     async (pillId) => {
       const current = Array.isArray(myPills) ? myPills : [];
-      const idx = current.findIndex((p) => p.id === pillId);
+      const idx = current.findIndex((p) => String(p.id) === String(pillId));
       if (idx < 0) return;
 
       const pill = current[idx];
@@ -156,7 +155,6 @@ export default function useMyPills({
     [myPills, saveMyPills]
   );
 
-  /** ✅ 알람 ON/OFF */
   const togglePillAlarm = useCallback(
     async (pillId, opts = {}) => {
       const soundOn = opts.soundOn ?? defaultSoundOn;
@@ -164,14 +162,13 @@ export default function useMyPills({
 
       try {
         const current = Array.isArray(myPills) ? myPills : [];
-        const idx = current.findIndex((p) => p.id === pillId);
+        const idx = current.findIndex((p) => String(p.id) === String(pillId));
         if (idx < 0) return;
 
         const pill = current[idx];
         const next = [...current];
         const time = pill?.schedules?.[0]?.time ?? '08:00';
 
-        // ON -> OFF
         if (pill.alarmEnabled) {
           await cancelIfExists(pill.notificationId);
           next[idx] = { ...pill, alarmEnabled: false, notificationId: null };
@@ -179,9 +176,7 @@ export default function useMyPills({
           return;
         }
 
-        // OFF -> ON (기존 예약 정리 후 재등록)
         await cancelIfExists(pill.notificationId);
-
         const notificationId = await scheduleDailyAlarm({
           pillName: pill.name ?? '복약',
           time,
@@ -193,13 +188,12 @@ export default function useMyPills({
         await saveMyPills(next);
       } catch (e) {
         console.error('❌ togglePillAlarm 실패:', e);
-        Alert.alert('오류', e?.message ?? '알람 설정 중 문제가 발생했습니다.');
+        Alert.alert('오류', '알람 설정 중 문제가 발생했습니다.');
       }
     },
     [myPills, saveMyPills, defaultSoundOn, defaultVibrationOn]
   );
 
-  /** ✅ 시간 변경: 켜져있으면 재등록 */
   const changePillAlarmTime = useCallback(
     async (pillId, timeStr, opts = {}) => {
       const soundOn = opts.soundOn ?? defaultSoundOn;
@@ -207,20 +201,17 @@ export default function useMyPills({
 
       try {
         parseTimeOrThrow(timeStr);
-
         const current = Array.isArray(myPills) ? myPills : [];
-        const idx = current.findIndex((p) => p.id === pillId);
+        const idx = current.findIndex((p) => String(p.id) === String(pillId));
         if (idx < 0) return;
 
         const pill = current[idx];
         const next = [...current];
 
-        // schedules 업데이트
         const schedules = Array.isArray(pill.schedules) ? [...pill.schedules] : [];
         if (schedules.length === 0) schedules.push({ time: '08:00' });
         schedules[0] = { ...schedules[0], time: timeStr };
 
-        // 기존 알림 취소
         await cancelIfExists(pill.notificationId);
 
         let notificationId = null;
@@ -237,47 +228,44 @@ export default function useMyPills({
         await saveMyPills(next);
       } catch (e) {
         console.error('❌ changePillAlarmTime 실패:', e);
-        Alert.alert('오류', e?.message ?? '알람 시간 변경 중 문제가 발생했습니다.');
       }
     },
     [myPills, saveMyPills, defaultSoundOn, defaultVibrationOn]
   );
 
-  /** ✅ 알람 삭제 = 알림 취소 + 비활성화(약은 유지) */
+  // 📍 [수정] 알람 삭제 시 필터링 로직 보강
   const deletePillAlarm = useCallback(
     async (pillId) => {
       try {
         const current = Array.isArray(myPills) ? myPills : [];
-        const idx = current.findIndex((p) => p.id === pillId);
+        const idx = current.findIndex((p) => String(p.id) === String(pillId));
         if (idx < 0) return;
 
         const pill = current[idx];
         await cancelIfExists(pill.notificationId);
 
         const next = [...current];
+        // 📍 알람만 끄는 게 아니라, 알람 데이터 자체를 정리하려면 구조에 맞게 수정 가능
         next[idx] = { ...pill, alarmEnabled: false, notificationId: null };
         await saveMyPills(next);
       } catch (e) {
         console.error('❌ deletePillAlarm 실패:', e);
-        Alert.alert('오류', e?.message ?? '알람 삭제 중 문제가 발생했습니다.');
       }
     },
     [myPills, saveMyPills]
   );
 
-  /** ✅ 약 삭제(알람도 같이 정리) */
   const deletePill = useCallback(
     async (pillId) => {
       try {
         const current = Array.isArray(myPills) ? myPills : [];
-        const pill = current.find((p) => p.id === pillId);
+        const pill = current.find((p) => String(p.id) === String(pillId));
         if (pill) await cancelIfExists(pill.notificationId);
 
-        const next = current.filter((p) => p.id !== pillId);
+        const next = current.filter((p) => String(p.id) !== String(pillId));
         await saveMyPills(next);
       } catch (e) {
         console.error('❌ deletePill 실패:', e);
-        Alert.alert('오류', e?.message ?? '삭제 중 문제가 발생했습니다.');
       }
     },
     [myPills, saveMyPills]

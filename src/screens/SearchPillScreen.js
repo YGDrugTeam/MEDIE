@@ -250,47 +250,6 @@ export default function SearchPillScreen({ setAppMode, initialKeyword, onSearch 
               </ScrollView>
             )}
           </View>
-
-          <View style={styles.bottomBar}>
-            <TouchableOpacity
-              onPress={() => setAppMode('HOME')}
-              style={styles.tabItem}
-            >
-              <Ionicons name="home" size={26} color={COLORS.secondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setAppMode('MEDICATION')}
-              style={styles.tabItem}
-            >
-              <Ionicons name="location" size={28} color={COLORS.secondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setAppMode('SEARCH_PILL')}
-              style={styles.tabItem}
-            >
-              <Ionicons name="search" size={26} color={COLORS.secondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setAppMode('COMMUNITY')}
-              style={styles.tabItem}
-            >
-              <Ionicons
-                name="chatbubble-ellipses"
-                size={26}
-                color={COLORS.secondary}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setAppMode('MYPAGE')}
-              style={styles.tabItem}
-            >
-              <Ionicons name="person" size={26} color={COLORS.secondary} />
-            </TouchableOpacity>
-          </View>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     </SafeAreaView>
@@ -307,17 +266,25 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    height: 64,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    height: 64, // 마이페이지와 동일한 높이
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
   },
   backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 44, // 터치 영역 확보
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: -10, // 마이페이지와 동일한 여백 조정
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#065809",
+    // 중앙 정렬을 위해 필요시 position: 'absolute' 사용 가능
   },
   scanButton: {
     flexDirection: 'row',
@@ -452,15 +419,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  bottomBar: {
-    height: 60,
-    backgroundColor: COLORS.warm,
-    borderTopWidth: 1,
-    borderTopColor: '#DCE8C8',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
   tabItem: {
     width: 48,
     alignItems: 'center',

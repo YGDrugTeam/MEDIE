@@ -9,8 +9,10 @@ import {
   Image,
   StyleSheet,
   Dimensions,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
 
 const { width } = Dimensions.get('window');
 
@@ -28,11 +30,67 @@ const COLORS = {
   accent: '#D88B1D',
 };
 
-const MAP_IMAGE =
-  'https://i.postimg.cc/T1fYQjb8/Chat-GPT-Image-2026-3-24-10-30-20.png';
 const DOG_IMAGE =
   'https://i.postimg.cc/13mM3Lxv/Chat-GPT-Image-2026-3-23-08-51-37.png';
 
+const KAKAO_JS_KEY = process.env.EXPO_PUBLIC_KAKAO_JS_KEY;
+
+// ─── 카카오맵 HTML 생성 ────────────────────────────────────────────────────
+function buildKakaoMapHtml(pharmacies, kakaoKey) {
+  const markersJs = pharmacies.slice(0, 10).map((p, i) => `
+    (function() {
+      var pos = new kakao.maps.LatLng(${p.lat}, ${p.lng});
+      var marker = new kakao.maps.Marker({ map: map, position: pos });
+      var infowindow = new kakao.maps.InfoWindow({
+        content: '<div style="padding:6px 10px;font-size:13px;font-weight:700;color:#065809;">${p.name.replace(/'/g, "\\'")}</div>'
+      });
+      kakao.maps.event.addListener(marker, 'click', function() {
+        infowindow.open(map, marker);
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'MARKER_CLICK',
+          name: '${p.name.replace(/'/g, "\\'")}',
+          lat: ${p.lat},
+          lng: ${p.lng},
+          address: '${(p.address || '').replace(/'/g, "\\'")}',
+        }));
+      });
+    })();
+  `).join('\n');
+
+  const center = pharmacies.length > 0
+    ? `{lat: ${pharmacies[0].lat}, lng: ${pharmacies[0].lng}}`
+    : `{lat: 37.5665, lng: 126.9780}`;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; }
+        #map { width: 100%; height: 100%; }
+      </style>
+    </head>
+    <body>
+      <div id="map"></div>
+      <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&libraries=services"></script>
+      <script>
+        var center = ${center};
+        var container = document.getElementById('map');
+        var options = {
+          center: new kakao.maps.LatLng(center.lat, center.lng),
+          level: 4
+        };
+        var map = new kakao.maps.Map(container, options);
+        ${markersJs}
+      </script>
+    </body>
+    </html>
+  `;
+}
+
+// ─── 컴포넌트 ──────────────────────────────────────────────────────────────
 export default function MapScreen({
   nearbyPharmacies = [],
   isSearchingMap = false,
@@ -45,65 +103,44 @@ export default function MapScreen({
     findNearbyPharmacies?.();
   }, [findNearbyPharmacies]);
 
-  const renderBottomBar = () => (
-    <View style={styles.bottomBar}>
-      <TouchableOpacity
-        onPress={() => setAppMode?.('HOME')}
-        style={styles.bottomTabItem}
-      >
-        <Ionicons name="home" size={28} color={COLORS.secondary} />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => setAppMode?.('MAP')}
-        style={styles.bottomTabItem}
-      >
-        <Ionicons name="location" size={28} color={COLORS.primary} />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => setAppMode?.('SEARCH_PILL')}
-        style={styles.bottomTabItem}
-      >
-        <Ionicons name="search" size={28} color={COLORS.secondary} />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => setAppMode?.('COMMUNITY')}
-        style={styles.bottomTabItem}
-      >
-        <Ionicons
-          name="chatbubble-ellipses"
-          size={28}
-          color={COLORS.secondary}
-        />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => setAppMode?.('MY_PAGE')}
-        style={styles.bottomTabItem}
-      >
-        <Ionicons name="person" size={28} color={COLORS.secondary} />
-      </TouchableOpacity>
-    </View>
-  );
+  // 마커 탭 → 카카오맵 길찾기
+  const handleWebViewMessage = (event) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'MARKER_CLICK') {
+        const kakaoNavi = `kakaomap://route?ep=${data.lat},${data.lng}&by=FOOT`;
+        const kakaoWeb = `https://map.kakao.com/link/to/${encodeURIComponent(data.name)},${data.lat},${data.lng}`;
+        Linking.canOpenURL(kakaoNavi)
+          .then(ok => Linking.openURL(ok ? kakaoNavi : kakaoWeb))
+          .catch(() => Linking.openURL(kakaoWeb));
+      }
+    } catch (e) { }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* 헤더 */}
+      {/* 📍 [수정] 터치 간섭을 완전히 제거한 헤더 구조 */}
       <View style={styles.header}>
+        {/* 1층: 배경으로 깔리는 제목 (zIndex: -1) */}
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitleText}>주변 약국</Text>
+        </View>
+
+        {/* 2층: 실제 클릭되는 버튼들 (터치 영역 확장) */}
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => setAppMode?.('HOME')}
+            style={styles.backButton}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 30 }} // 📍 터치 민감도 대폭 상향
+          >
+            <Ionicons name="chevron-back" size={34} color={COLORS.secondary} />
+          </TouchableOpacity>
+          {/* 로고 배치 */}
+        </View>
+
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={() => setAppMode?.('HOME')}
-          style={styles.backButton}
-        >
-          <Ionicons name="chevron-back" size={34} color={COLORS.secondary} />
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>주변 약국</Text>
-
-        <TouchableOpacity
-          activeOpacity={0.85}
           style={styles.scanButton}
           onPress={() => setAppMode?.('SCAN')}
         >
@@ -123,11 +160,14 @@ export default function MapScreen({
           주변 약국 정보 및 위치 번호를 알려드려요.
         </Text>
 
-        {/* 지도 이미지 */}
+        {/* 🗺️ 카카오맵 WebView */}
         <View style={styles.mapCard}>
-          <Image
-            source={{ uri: MAP_IMAGE }}
+          <WebView
+            source={{ html: buildKakaoMapHtml(nearbyPharmacies, KAKAO_JS_KEY) }}
             style={styles.mapImage}
+            onMessage={handleWebViewMessage}
+            javaScriptEnabled
+            scrollEnabled={false}
           />
         </View>
 
@@ -195,8 +235,6 @@ export default function MapScreen({
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-
-      {renderBottomBar()}
     </SafeAreaView>
   );
 }
@@ -208,29 +246,40 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    height: 72,
-    paddingHorizontal: 18,
+    height: 64, // 마이페이지와 규격 통일
+    paddingHorizontal: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
+    zIndex: 10, // 헤더 전체를 상단으로
   },
-
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 20, // 버튼 영역을 제목보다 위로
+  },
+  headerTitleContainer: {
+    position: 'absolute', // 제목을 바닥에 깔기
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: -1, // 📍 이게 핵심! 제목이 버튼 터치를 방해하지 않음
+  },
+  headerTitleText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
   backButton: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  headerTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    textAlign: 'center',
-    fontSize: 24,
-    fontWeight: '800',
-    color: COLORS.primary,
+    marginLeft: -10,
   },
 
   scanButton: {
@@ -293,13 +342,13 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 2,
     marginBottom: 18,
+    overflow: 'hidden', // WebView 모서리 둥글게
   },
 
   mapImage: {
     width: '100%',
     height: Math.min(width * 0.58, 260),
     borderRadius: 18,
-    resizeMode: 'cover',
     backgroundColor: '#F8FBF5',
   },
 
@@ -416,20 +465,6 @@ const styles = StyleSheet.create({
 
   bottomSpacer: {
     height: 70,
-  },
-
-  bottomBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 60,
-    backgroundColor: COLORS.warm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
   },
 
   bottomTabItem: {
