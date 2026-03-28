@@ -14,6 +14,7 @@ import {
     PanResponder,
 } from 'react-native';
 import * as Speech from 'expo-speech';
+import { Buffer } from 'buffer';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system/legacy';
 import {
@@ -197,11 +198,7 @@ export const MedieChatView = ({
             if (!response.ok) throw new Error(`TTS 오류: ${response.status}`);
 
             const arrayBuffer = await response.arrayBuffer();
-            const base64Audio = btoa(
-                new Uint8Array(arrayBuffer).reduce(
-                    (data, byte) => data + String.fromCharCode(byte), ''
-                )
-            );
+            const base64Audio = Buffer.from(new Uint8Array(arrayBuffer)).toString('base64');
 
             const fileUri = `${FileSystem.cacheDirectory}medie_tts.mp3`;
             await FileSystem.writeAsStringAsync(fileUri, base64Audio, {
@@ -305,7 +302,8 @@ export const MedieChatView = ({
 
     const startListeningInternal = async () => {
         try {
-            await ExpoSpeechRecognitionModule.start({ lang: 'ko-KR', interimResults: true });
+            const lang = Platform.OS === 'android' ? 'ko' : 'ko-KR';  // ← 추가
+            await ExpoSpeechRecognitionModule.start({ lang, interimResults: true });  // ← 교체
             setIsListening(true);
         } catch (e) {
             if (!e.message?.includes('already')) console.error('마이크 재시작 실패:', e);
