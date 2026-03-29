@@ -395,7 +395,7 @@ export const MedieChatView = ({
                 if (onCompleteNextDose) await onCompleteNextDose();
             }
 
-            // ✅ 알람 시간 변경
+            // ✅ 패턴 감지로 알람 변경 제안 왔을 때
             if (data.command === 'SET_ALARM' && data.params?.time) {
                 if (onChangeAlarmTime) {
                     const pill = myPills[0];
