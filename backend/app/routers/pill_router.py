@@ -18,12 +18,12 @@ class AlarmTimeResponse(BaseModel):
 class AlarmTimeUpdateRequest(BaseModel):
     alarm_time: str
 
-@router.get("/api/alarm/{user_id}", response_model=AlarmTimeResponse)
+@router.get("/alarm/{user_id}", response_model=AlarmTimeResponse)
 async def get_alarm_time(user_id: str):
     alarm_time = alarm_store.get(user_id, "08:00")
     return {"alarm_time": alarm_time}
 
-@router.post("/api/alarm/{user_id}")
+@router.post("/alarm/{user_id}")
 async def update_alarm_time(user_id: str, req: AlarmTimeUpdateRequest):
     alarm_store[user_id] = req.alarm_time
     print(f"✅ 알람 시간 업데이트: {user_id} / {req.alarm_time}")
