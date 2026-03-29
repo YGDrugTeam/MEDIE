@@ -7,14 +7,14 @@ import { initNotifications } from './src/services/notificationInit';
 import { API_BASE } from './src/api/api';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+ 
 /* styles */
 import { styles } from './src/styles/commonStyles';
-
+ 
 /* components */
 import HomeFloatingButton from './src/components/HomeFloatingButton';
 import { MedieChatView } from './src/components/MedieChatView';
-
+ 
 /* screens */
 import StartScreen from './src/screens/StartScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -38,22 +38,22 @@ import EditPostScreen from './src/screens/EditPostScreen';
 import MedicationOnboardingScreen from './src/screens/MedicationOnboardingScreen';
 import AppInfoScreen from './src/screens/AppInfoScreen';
 import ProfileEditScreen from './src/screens/ProfileEditScreen';
-
+ 
 /* hooks */
 import useCameraScan from './src/hooks/useCameraScan';
 import usePharmacySearch from './src/hooks/usePharmacySearch';
 import useBackHandler from './src/hooks/useBackHandler';
 import useMyPills from './src/hooks/useMyPills';
-
+ 
 const STORAGE_KEY = 'MY_PILLS_JSON';
 const ONBOARDING_KEY = 'HAS_SEEN_MEDICATION_ONBOARDING';
-
+ 
 export default function App() {
   const [isStarted, setIsStarted] = useState(false);
   const [appMode, setAppMode] = useState('LOGIN');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isCheckingLogin, setIsCheckingLogin] = useState(true);
-
+ 
   const [user, setUser] = useState({
     id: '',
     name: 'MEDI 사용자',
@@ -61,7 +61,7 @@ export default function App() {
     profileImage: null,
     dogType: 'default',
   });
-
+ 
   const [selectedSupportPost, setSelectedSupportPost] = useState(null);
   const [writeBoardType, setWriteBoardType] = useState('free');
   const [selectedPost, setSelectedPost] = useState(null);
@@ -71,7 +71,7 @@ export default function App() {
   const [voicePostDraft, setVoicePostDraft] = useState(null);
   const [selectedPill, setSelectedPill] = useState(null);
   const [hasSeenMedicationOnboarding, setHasSeenMedicationOnboarding] = useState(false);
-
+ 
   // 1. 알약 관련 훅 먼저 선언
   const {
     myPills,
@@ -81,21 +81,21 @@ export default function App() {
     changePillAlarmTime,
     deletePill,
   } = useMyPills({ STORAGE_KEY });
-
+ 
   // 2. [중요] registerPillFromAiResponse 정의 (훅 호출보다 위에 있어야 함)
   const registerPillFromAiResponse = useCallback(
     async (aiText) => {
       const responseText = typeof aiText === 'string' ? aiText : aiText?.rawText || '';
-
+ 
       const pillName =
         (typeof aiText === 'object' && aiText?.pillName) ||
         responseText.split('\n').find((l) => l.includes('알약 이름'))?.replace('💊 알약 이름: ', '') ||
         '알 수 없음';
-
+ 
       const initialSchedules = [
         { label: '아침', time: '08:00', notificationId: null, enabled: true, takenToday: false },
       ];
-
+ 
       const newPill = {
         id: Date.now().toString(),
         name: pillName,
@@ -107,7 +107,7 @@ export default function App() {
         notificationId: null,
         createdAt: Date.now(),
       };
-
+ 
       const updated = [newPill, ...(myPills ?? [])];
       try {
         await saveMyPills(updated);
@@ -118,7 +118,7 @@ export default function App() {
     },
     [myPills, saveMyPills]
   );
-
+ 
   // 3. 카메라 스캔 훅 (위에서 정의한 함수 전달)
   const {
     cameraRef,
@@ -132,7 +132,7 @@ export default function App() {
   } = useCameraScan({
     onRegisterPill: registerPillFromAiResponse,
   });
-
+ 
   // 4. 나머지 훅 및 핸들러
   const {
     nearbyPharmacies,
@@ -141,7 +141,7 @@ export default function App() {
     openKakaoMapDetail,
     makePhoneCall,
   } = usePharmacySearch();
-
+ 
   const handleUpdateProfile = async (updatedData) => {
     const newUser = {
       ...user,
@@ -155,17 +155,17 @@ export default function App() {
       await AsyncStorage.setItem('userProfileImage', updatedData.profileImage);
     }
   };
-
+ 
   const handleOpenBoard = (post, boardTitle = '자유게시판') => {
     setSelectedPost(post);
     setSelectedBoardTitle(boardTitle);
     setAppMode('BOARD');
   };
-
+ 
   const handleBackToCommunity = () => {
     setAppMode('COMMUNITY');
   };
-
+ 
   const handleMedicationOnboardingDone = async () => {
     try {
       await SecureStore.setItemAsync(ONBOARDING_KEY, 'true');
@@ -174,7 +174,7 @@ export default function App() {
       console.error('온보딩 저장 실패:', error);
     }
   };
-
+ 
   const completeNextDose = useCallback(async () => {
     const allSchedules = myPills.flatMap((pill) =>
       (pill.schedules || []).map((schedule, index) => ({
@@ -187,7 +187,7 @@ export default function App() {
     const next = allSchedules
       .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'))
       .find((item) => !item.takenToday);
-
+ 
     if (!next) return;
     const updated = myPills.map((pill) => {
       if (pill.id !== next.pillId) return pill;
@@ -200,12 +200,12 @@ export default function App() {
     });
     await saveMyPills(updated);
   }, [myPills, saveMyPills]);
-
+ 
   const toggleAllAlarms = useCallback(async (enabled) => {
     const updated = myPills.map(pill => ({ ...pill, alarmEnabled: enabled }));
     await saveMyPills(updated);
   }, [myPills, saveMyPills]);
-
+ 
   const deleteAllAlarms = useCallback(async () => {
     const updated = myPills.map(pill => ({
       ...pill,
@@ -214,28 +214,28 @@ export default function App() {
     }));
     await saveMyPills(updated);
   }, [myPills, saveMyPills]);
-
+ 
   const goAlarmFromPill = async (pillId) => {
     await ensurePillSchedule(pillId);
     setAppMode('ALARM');
   };
-
+ 
   useEffect(() => {
     const setup = async () => {
       try {
         setIsCheckingLogin(true);
         await initNotifications();
         await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-
+ 
         const accessToken = await SecureStore.getItemAsync('accessToken');
         const userId = await SecureStore.getItemAsync('userId');
         const userName = await SecureStore.getItemAsync('userName');
         const userEmail = await SecureStore.getItemAsync('userEmail');
         const seenOnboarding = await SecureStore.getItemAsync(ONBOARDING_KEY);
         const savedProfileImg = await AsyncStorage.getItem('userProfileImage');
-
+ 
         setHasSeenMedicationOnboarding(seenOnboarding === 'true');
-
+ 
         if (accessToken && userId) {
           setIsLoggedIn(true);
           setUser({
@@ -258,9 +258,9 @@ export default function App() {
     };
     setup();
   }, []);
-
+ 
   useBackHandler({ appMode, setAppMode, showResult });
-
+ 
   if (isCheckingLogin) {
     return (
       <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -268,7 +268,7 @@ export default function App() {
       </SafeAreaView>
     );
   }
-
+ 
   if (!isStarted) {
     return (
       <StartScreen
@@ -280,7 +280,7 @@ export default function App() {
       />
     );
   }
-
+ 
   if (!isLoggedIn) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -295,13 +295,13 @@ export default function App() {
       </SafeAreaView>
     );
   }
-
+ 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar backgroundColor="#F7F3DD" barStyle="dark-content" />
-
+ 
       {appMode === 'HOME' && <HomeFloatingButton onPress={() => setAppMode('SCAN')} />}
-
+ 
       <View style={{ flex: 1 }}>
         {(() => {
           switch (appMode) {
@@ -348,7 +348,7 @@ export default function App() {
           }
         })()}
       </View>
-
+ 
       {/* 하단바 디자인 고정 */}
       {!['LOGIN', 'REGISTER', 'MEDICATION_ONBOARDING', 'SCAN', 'START', 'APP_INFO', 'PROFILE_EDIT'].includes(appMode) && (
         <View style={appStyles.bottomBar}>
@@ -374,7 +374,7 @@ export default function App() {
           </TouchableOpacity>
         </View>
       )}
-
+ 
       <MedieChatView
         appMode={appMode}
         setAppMode={setAppMode}
@@ -392,7 +392,7 @@ export default function App() {
     </SafeAreaView>
   );
 }
-
+ 
 const appStyles = StyleSheet.create({
   bottomBar: {
     flexDirection: 'row',
