@@ -124,8 +124,12 @@ export const MedieChatView = ({
 
                 // IoT 감지 팝업
                 if (data.show_confirmation && data.command === 'SHOW_CONFIRMATION') {
-                    console.log("🔔 IoT 무게 감지! 팝업 표시");
-                    setShowConfirmButtons(true);
+                    if (onCompleteNextDose) await onCompleteNextDose();
+                    showBubbleText('약 드신 것 감지했어요! 💊');
+                    setTimeout(() => hideBubble(), 2000);
+                    if (data.last_confirmed_timestamp) {
+                        setLastConfirmedTimestamp(data.last_confirmed_timestamp);
+                    }
                 }
 
                 // last_confirmed_timestamp 업데이트
@@ -138,7 +142,7 @@ export const MedieChatView = ({
         };
 
         // 30초마다 IoT 체크
-        const interval = setInterval(pollIoT, 60000);
+        const interval = setInterval(pollIoT, 30000);
 
         return () => clearInterval(interval);
     }, [appMode, pillHistory, lastConfirmedTimestamp, showConfirmButtons]);
@@ -458,7 +462,12 @@ export const MedieChatView = ({
 
             // ✅ IoT 확인 팝업
             if (data.show_confirmation && data.command === 'SHOW_CONFIRMATION') {
-                setShowConfirmButtons(true);
+                if (onCompleteNextDose) await onCompleteNextDose();
+                showBubbleText('약 드신 것 감지했어요! 💊');
+                setTimeout(() => hideBubble(), 2000);
+                if (data.last_confirmed_timestamp) {
+                    setLastConfirmedTimestamp(data.last_confirmed_timestamp);
+                }
             }
 
             // ✅ 약 검색
