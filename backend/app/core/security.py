@@ -3,7 +3,9 @@ from passlib.context import CryptContext
 from fastapi import HTTPException, status
 import jwt
 
-SECRET_KEY = "your-very-secret-key-change-this"
+import os
+
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7일
 

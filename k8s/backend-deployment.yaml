@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: tofubean123/medichubs-backend:v1
+          image: tofubean123/medichubs-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
