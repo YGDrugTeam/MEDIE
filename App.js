@@ -54,9 +54,6 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isCheckingLogin, setIsCheckingLogin] = useState(true);
 
-
-
-
   const [user, setUser] = useState({
     id: '',
     name: 'MEDI 사용자',
@@ -85,7 +82,7 @@ export default function App() {
     deletePill,
   } = useMyPills({ STORAGE_KEY });
 
-  // 2. [중요] registerPillFromAiResponse 정의 (훅 호출보다 위에 있어야 함)
+  // 2. registerPillFromAiResponse 정의
   const registerPillFromAiResponse = useCallback(
     async (aiText) => {
       const responseText = typeof aiText === 'string' ? aiText : aiText?.rawText || '';
@@ -95,18 +92,35 @@ export default function App() {
         responseText.split('\n').find((l) => l.includes('알약 이름'))?.replace('💊 알약 이름: ', '') ||
         '알 수 없음';
 
-      const initialSchedules = [
-        { label: '아침', time: '08:00', notificationId: null, enabled: true, takenToday: false },
-      ];
+      // ✅ AI가 예측한 스케줄 사용 (없으면 아침 기본값)
+      const aiSchedule = (typeof aiText === 'object' && Array.isArray(aiText?.schedule))
+        ? aiText.schedule
+        : ['아침'];
+
+      const LABEL_TIME_MAP = {
+        '아침': '08:00',
+        '점심': '12:00',
+        '저녁': '18:00',
+        '취침전': '21:00',
+      };
+
+      // ✅ AI 예측 스케줄 → 알람 시간 자동 설정
+      const initialSchedules = aiSchedule.map(label => ({
+        label,
+        time: LABEL_TIME_MAP[label] || '08:00',
+        notificationId: null,
+        enabled: true,
+        takenToday: false,
+      }));
 
       const newPill = {
         id: Date.now().toString(),
         name: pillName,
-        usage: '',
-        warning: '',
-        confidence: '100',
+        usage: typeof aiText === 'object' ? aiText?.usage || '' : '',
+        warning: typeof aiText === 'object' ? aiText?.caution || '' : '',
+        confidence: typeof aiText === 'object' ? aiText?.confidence || '100' : '100',
         schedules: initialSchedules,
-        alarmEnabled: false,
+        alarmEnabled: true,  // ✅ 자동으로 알람 ON
         notificationId: null,
         createdAt: Date.now(),
       };
@@ -122,7 +136,7 @@ export default function App() {
     [myPills, saveMyPills]
   );
 
-  // 3. 카메라 스캔 훅 (위에서 정의한 함수 전달)
+  // 3. 카메라 스캔 훅
   const {
     cameraRef,
     isAnalyzing,
@@ -223,6 +237,20 @@ export default function App() {
     setAppMode('ALARM');
   };
 
+  // ✅ pillHistory 포맷 정규화 함수
+  const handlePillHistoryUpdate = useCallback((newHistory) => {
+    if (!Array.isArray(newHistory)) return;
+    const normalized = newHistory.map(item => ({
+      date: item.date || new Date().toISOString().slice(0, 10),
+      time: item.time || '--:--',
+      taken: item.taken ?? true,
+      label: item.label || '복약',
+      pillName: item.pill_name || item.pillName || '약',
+      source: item.source || 'confirmed',
+    }));
+    setPillHistory(normalized);
+  }, []);
+
   useEffect(() => {
     const setup = async () => {
       try {
@@ -310,57 +338,200 @@ export default function App() {
         {(() => {
           switch (appMode) {
             case 'HOME':
-              return <HomeScreen setAppMode={setAppMode} onPressMap={() => { setAppMode('MAP'); findNearbyPharmacies(); }} isLoggedIn={isLoggedIn} user={user} myPills={myPills} setIsLoggedIn={setIsLoggedIn} setUser={setUser} />;
+              return (
+                <HomeScreen
+                  setAppMode={setAppMode}
+                  onPressMap={() => { setAppMode('MAP'); findNearbyPharmacies(); }}
+                  isLoggedIn={isLoggedIn}
+                  user={user}
+                  myPills={myPills}
+                  setIsLoggedIn={setIsLoggedIn}
+                  setUser={setUser}
+                />
+              );
             case 'APP_INFO':
               return <AppInfoScreen setAppMode={setAppMode} />;
             case 'PROFILE_EDIT':
-              return <ProfileEditScreen user={user} onUpdateProfile={handleUpdateProfile} onBack={() => setAppMode('MY_PAGE')} />;
+              return (
+                <ProfileEditScreen
+                  user={user}
+                  onUpdateProfile={handleUpdateProfile}
+                  onBack={() => setAppMode('MY_PAGE')}
+                />
+              );
             case 'MEDICATION_ONBOARDING':
-              return <MedicationOnboardingScreen setAppMode={setAppMode} onSelectYes={handleMedicationOnboardingDone} onSelectNo={handleMedicationOnboardingDone} />;
+              return (
+                <MedicationOnboardingScreen
+                  setAppMode={setAppMode}
+                  onSelectYes={handleMedicationOnboardingDone}
+                  onSelectNo={handleMedicationOnboardingDone}
+                />
+              );
             case 'SCAN':
-              return <ScanScreen cameraRef={cameraRef} isAnalyzing={isAnalyzing} showResult={showResult} aiResponse={aiResponse} drugImageUrl={drugImageUrl} onScan={handleScan} onRegisterPill={handleRegisterPill} onCloseResult={closeResult} setAppMode={setAppMode} />;
+              return (
+                <ScanScreen
+                  cameraRef={cameraRef}
+                  isAnalyzing={isAnalyzing}
+                  showResult={showResult}
+                  aiResponse={aiResponse}
+                  drugImageUrl={drugImageUrl}
+                  onScan={handleScan}
+                  onRegisterPill={handleRegisterPill}
+                  onCloseResult={closeResult}
+                  setAppMode={setAppMode}
+                />
+              );
             case 'MY_PILL':
-              return <MyPillScreen setAppMode={setAppMode} myPills={myPills} onToggleAlarm={goAlarmFromPill} onDeletePill={deletePill} selectedPill={selectedPill} setSelectedPill={setSelectedPill} />;
+              return (
+                <MyPillScreen
+                  setAppMode={setAppMode}
+                  myPills={myPills}
+                  onToggleAlarm={goAlarmFromPill}
+                  onDeletePill={deletePill}
+                  selectedPill={selectedPill}
+                  setSelectedPill={setSelectedPill}
+                />
+              );
             case 'MY_PILL_DETAIL':
-              return <MyPillDetailScreen pill={selectedPill} onToggleAlarm={goAlarmFromPill} onDeletePill={deletePill} setAppMode={setAppMode} />;
+              return (
+                <MyPillDetailScreen
+                  pill={selectedPill}
+                  onToggleAlarm={goAlarmFromPill}
+                  onDeletePill={deletePill}
+                  setAppMode={setAppMode}
+                />
+              );
             case 'MAP':
-              return <MapScreen setAppMode={setAppMode} nearbyPharmacies={nearbyPharmacies} findNearbyPharmacies={findNearbyPharmacies} isSearchingMap={isSearchingMap} makePhoneCall={makePhoneCall} openKakaoMapDetail={openKakaoMapDetail} />;
+              return (
+                <MapScreen
+                  setAppMode={setAppMode}
+                  nearbyPharmacies={nearbyPharmacies}
+                  findNearbyPharmacies={findNearbyPharmacies}
+                  isSearchingMap={isSearchingMap}
+                  makePhoneCall={makePhoneCall}
+                  openKakaoMapDetail={openKakaoMapDetail}
+                />
+              );
             case 'ALARM':
-              return <AlarmScreen myPills={myPills} setAppMode={setAppMode} togglePillAlarm={togglePillAlarm} changePillAlarmTime={changePillAlarmTime} deletePill={deletePill} />;
+              return (
+                <AlarmScreen
+                  myPills={myPills}
+                  setAppMode={setAppMode}
+                  togglePillAlarm={togglePillAlarm}
+                  changePillAlarmTime={changePillAlarmTime}
+                  deletePill={deletePill}
+                />
+              );
             case 'HISTORY':
-              return <HistoryScreen setAppMode={setAppMode} />;
+              // ✅ pillHistory 전달 추가
+              return (
+                <HistoryScreen
+                  setAppMode={setAppMode}
+                  pillHistory={pillHistory}
+                />
+              );
             case 'SEARCH_PILL':
-              return <SearchPillScreen setAppMode={setAppMode} initialKeyword={searchKeyword} onSearch={() => setSearchKeyword('')} />;
+              return (
+                <SearchPillScreen
+                  setAppMode={setAppMode}
+                  initialKeyword={searchKeyword}
+                  onSearch={() => setSearchKeyword('')}
+                />
+              );
             case 'COMMUNITY':
-              return <CommunityScreen setAppMode={setAppMode} onOpenBoard={handleOpenBoard} setWriteBoardType={setWriteBoardType} />;
+              return (
+                <CommunityScreen
+                  setAppMode={setAppMode}
+                  onOpenBoard={handleOpenBoard}
+                  setWriteBoardType={setWriteBoardType}
+                />
+              );
             case 'BOARD':
-              return <BoardScreen setAppMode={setAppMode} post={selectedPost} boardTitle={selectedBoardTitle} onBack={handleBackToCommunity} />;
+              return (
+                <BoardScreen
+                  setAppMode={setAppMode}
+                  post={selectedPost}
+                  boardTitle={selectedBoardTitle}
+                  onBack={handleBackToCommunity}
+                  currentUserName={user.nickname || user.name}  // ← user.id → user.name 으로 변경
+                  onEditBoard={(post) => {
+                    setSelectedPost(post);
+                    setAppMode('EDIT_POST');
+                  }}
+                />
+              );
             case 'EDIT_POST':
-              return <EditPostScreen setAppMode={setAppMode} post={selectedPost} />;
+              return (
+                <EditPostScreen
+                  setAppMode={setAppMode}
+                  post={selectedPost}
+                />
+              );
             case 'SUPPORT':
-              return <SupportMainScreen setAppMode={setAppMode} onOpenSupport={(item) => { setSelectedSupportPost(item); setAppMode('SUPPORT_DETAIL'); }} />;
+              return (
+                <SupportMainScreen
+                  setAppMode={setAppMode}
+                  onOpenSupport={(item) => {
+                    setSelectedSupportPost(item);
+                    setAppMode('SUPPORT_DETAIL');
+                  }}
+                />
+              );
             case 'SUPPORT_DETAIL':
-              return <SupportListScreen post={selectedSupportPost} onBack={() => setAppMode('SUPPORT')} setAppMode={setAppMode} />;
+              return (
+                <SupportListScreen
+                  post={selectedSupportPost}
+                  onBack={() => setAppMode('SUPPORT')}
+                  setAppMode={setAppMode}
+                />
+              );
             case 'SUPPORT_WRITE':
               return <SupportWriteScreen setAppMode={setAppMode} />;
             case 'MY_PAGE':
-              return <MyPageScreen user={user} myPills={myPills} pillAlarms={myPills.flatMap((pill) => pill.schedules || [])} onBack={() => setAppMode('HOME')} onNavigate={(mode) => setAppMode(mode)} onLogout={async () => { await SecureStore.deleteItemAsync('accessToken'); setIsLoggedIn(false); setAppMode('LOGIN'); }} />;
+              return (
+                <MyPageScreen
+                  user={user}
+                  myPills={myPills}
+                  pillAlarms={myPills.flatMap((pill) => pill.schedules || [])}
+                  onBack={() => setAppMode('HOME')}
+                  onNavigate={(mode) => setAppMode(mode)}
+                  onLogout={async () => {
+                    await SecureStore.deleteItemAsync('accessToken');
+                    setIsLoggedIn(false);
+                    setAppMode('LOGIN');
+                  }}
+                />
+              );
             case 'WRITE_BOARD':
-              return <WriteBoardScreen setAppMode={setAppMode} writeBoardType={writeBoardType} voiceDraft={voicePostDraft} onDraftUsed={() => setVoicePostDraft(null)} />;
+              return (
+                <WriteBoardScreen
+                  setAppMode={setAppMode}
+                  writeBoardType={writeBoardType}
+                  voiceDraft={voicePostDraft}
+                  onDraftUsed={() => setVoicePostDraft(null)}
+                />
+              );
             default:
-              return <HomeScreen setAppMode={setAppMode} isLoggedIn={isLoggedIn} user={user} myPills={myPills} />;
+              return (
+                <HomeScreen
+                  setAppMode={setAppMode}
+                  isLoggedIn={isLoggedIn}
+                  user={user}
+                  myPills={myPills}
+                />
+              );
           }
         })()}
       </View>
 
-      {/* 하단바 디자인 고정 */}
+      {/* 하단바 */}
       {!['LOGIN', 'REGISTER', 'MEDICATION_ONBOARDING', 'SCAN', 'START', 'APP_INFO', 'PROFILE_EDIT'].includes(appMode) && (
         <View style={appStyles.bottomBar}>
           <TouchableOpacity onPress={() => setAppMode('HOME')} style={appStyles.tabItem}>
             <Ionicons name="home" size={26} color={appMode === 'HOME' ? '#065809' : '#67A369'} />
             <Text style={[appStyles.tabText, { color: appMode === 'HOME' ? '#065809' : '#67A369' }]}>홈</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setAppMode('MAP')} style={appStyles.tabItem}>
+          <TouchableOpacity onPress={() => { setAppMode('MAP'); findNearbyPharmacies(); }} style={appStyles.tabItem}>
             <Ionicons name="location" size={26} color={appMode === 'MAP' ? '#065809' : '#67A369'} />
             <Text style={[appStyles.tabText, { color: appMode === 'MAP' ? '#065809' : '#67A369' }]}>약국</Text>
           </TouchableOpacity>
@@ -391,7 +562,8 @@ export default function App() {
         onWritePost={(draft) => setVoicePostDraft(draft)}
         myPills={myPills}
         pillHistory={pillHistory}
-        onPillHistoryUpdate={(newHistory) => setPillHistory(newHistory)}  // ← 추가
+        // ✅ 포맷 정규화 핸들러
+        onPillHistoryUpdate={handlePillHistoryUpdate}
       />
     </SafeAreaView>
   );

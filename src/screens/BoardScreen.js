@@ -79,6 +79,7 @@ export default function BoardScreen({
 
   const isMine = useMemo(() => {
     if (!currentUserName || !detail?.author) return false;
+    console.log('비교:', currentUserName, '/', detail.author);  // ← 이거 추가
     return String(currentUserName).trim() === String(detail.author).trim();
   }, [currentUserName, detail?.author]);
 
@@ -152,7 +153,11 @@ export default function BoardScreen({
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <TouchableOpacity
+              onPress={onBack}
+              style={styles.backButton}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}  // ✅
+            >
               <Ionicons name="chevron-back" size={34} color={COLORS.secondary} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>커뮤니티</Text>
@@ -185,7 +190,11 @@ export default function BoardScreen({
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <TouchableOpacity
+              onPress={onBack}
+              style={styles.backButton}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}  // ✅
+            >
               <Ionicons name="chevron-back" size={34} color={COLORS.secondary} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>커뮤니티</Text>
@@ -219,7 +228,11 @@ export default function BoardScreen({
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={onBack}
+            style={styles.backButton}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}  // ✅
+          >
             <Ionicons name="chevron-back" size={34} color={COLORS.secondary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>커뮤니티</Text>

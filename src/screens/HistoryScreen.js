@@ -397,9 +397,9 @@ export default function HistoryScreen({ pillHistory = [], setAppMode }) {
                         paddingVertical: 10,
                         marginHorizontal: 2,
                         borderRadius: 16,
-                        backgroundColor: isSelected ? COLORS.SURFACE_SOFT : 'transparent',
-                        borderWidth: isToday ? 1 : 0,
-                        borderColor: isToday ? COLORS.PRIMARY : 'transparent',
+                        backgroundColor: isSelected ? '#C8E6C9' : 'transparent',
+                        borderWidth: isSelected ? 2 : isToday ? 1 : 0,
+                        borderColor: isSelected ? '#065809' : isToday ? COLORS.PRIMARY : 'transparent',
                       }}
                     >
                       <Text
@@ -545,9 +545,9 @@ export default function HistoryScreen({ pillHistory = [], setAppMode }) {
                           justifyContent: 'center',
                           paddingVertical: 10,
                           borderRadius: 14,
-                          backgroundColor: isSelected ? COLORS.SURFACE_SOFT : 'transparent',
-                          borderWidth: isToday ? 1 : 0,
-                          borderColor: isToday ? COLORS.PRIMARY : 'transparent',
+                          backgroundColor: isSelected ? '#C8E6C9' : 'transparent',
+                          borderWidth: isSelected ? 2 : isToday ? 1 : 0,
+                          borderColor: isSelected ? '#065809' : isToday ? COLORS.PRIMARY : 'transparent',
                           opacity: isCurrentMonth ? 1 : 0.35,
                         }}
                       >

@@ -22,6 +22,7 @@ export default function usePillSearch({
   const [results, setResults] = useState([]);      // 리스트
   const [selected, setSelected] = useState(null);  // 상세(선택된 약)
   const [showModal, setShowModal] = useState(false);
+  const [hasSearchedOnce, setHasSearchedOnce] = useState(false);
 
   const canSearch = useMemo(() => query.trim().length >= 1, [query]);
 
@@ -50,6 +51,8 @@ export default function usePillSearch({
       if (!res.ok) {
         if (res.status === 404) {
           setResults([]);
+          setSelected(null);
+          setHasSearchedOnce(true); // ✅ 추가
           setShowModal(true);
           return;
         }
@@ -60,6 +63,7 @@ export default function usePillSearch({
       const list = normalizeToArray(data);
 
       setResults(list);
+      setHasSearchedOnce(true);
       setShowModal(true);
 
       // 1개면 자동으로 상세로 보여줘도 편함
@@ -97,6 +101,7 @@ export default function usePillSearch({
     closeModal,
 
     search,
+    hasSearchedOnce,
     selectItem,
     clear,
   };

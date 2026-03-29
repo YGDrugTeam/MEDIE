@@ -69,6 +69,14 @@ export default function MedicationOnboardingScreen({
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
+                <TouchableOpacity
+                    onPress={() => setAppMode('HOME')}
+                    style={{ alignSelf: 'flex-start', padding: 8, marginTop: 10 }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                    <Ionicons name="chevron-back" size={30} color={COLORS.primary} />
+                </TouchableOpacity>
+
                 <View style={styles.topSpace} />
 
                 <Animated.View

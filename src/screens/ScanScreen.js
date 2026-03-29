@@ -226,7 +226,12 @@ export default function ScanScreen({
       <CameraView style={styles.camera} facing="back" ref={cameraRef} />
       <View style={styles.dimLayer} />
       <View style={styles.header}>
-        <TouchableOpacity activeOpacity={0.85} onPress={() => setAppMode('HOME')} style={styles.backButton}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setAppMode('HOME')}
+          style={styles.backButton}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}  // ✅ 추가
+        >
           <Ionicons name="chevron-back" size={30} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>약 스캔</Text>
@@ -362,6 +367,8 @@ const styles = StyleSheet.create({
 
   header: {
     position: 'absolute',
+    zIndex: 999,
+    elevation: 999,
     top: 54,
     left: 20,
     right: 20,
@@ -375,6 +382,7 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
   },
 
   headerTitle: {
