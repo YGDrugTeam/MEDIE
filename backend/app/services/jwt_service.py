@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Header, Depends, HTTPException, status
 from fastapi.security import HTTPBearer
 from app.core.security import decode_access_token
 
@@ -31,21 +31,27 @@ def verify_device_jwt(token=Depends(security)):
         raise HTTPException(status_code=401, detail="Invalid JWT")
 
 
-def verify_access_jwt(token: str):
-    try:
-        payload = decode_access_token(token)
+def verify_access_jwt(authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization 헤더가 없습니다.",
+        )
 
-        user_id = payload.get("sub")
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid JWT: sub 없음",
-            )
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Bearer 토큰 형식이 아닙니다.",
+        )
 
-        return payload
+    token = authorization.replace("Bearer ", "", 1).strip()
+    payload = decode_access_token(token)
 
-    except Exception:
+    user_id = payload.get("sub")
+    if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid JWT",
         )
+
+    return payload

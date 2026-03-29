@@ -14,11 +14,11 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 
-import MASCOT_IMG from '/Users/lifeiscabaret/Final-Project/LastMobileApp/assets/MASCOT_IMG.png';
-import CAMERA_ICON from '/Users/lifeiscabaret/Final-Project/LastMobileApp/assets/camera.png';
-import FIND_ICON from '/Users/lifeiscabaret/Final-Project/LastMobileApp/assets/find.png';
-import PILL_ICON from '/Users/lifeiscabaret/Final-Project/LastMobileApp/assets/redpill.png';
-import CHECK_PILL_ICON from '/Users/lifeiscabaret/Final-Project/LastMobileApp/assets/greenpill.png';
+import MASCOT_IMG from '../../assets/MASCOT_IMG.png';
+import CAMERA_ICON from '../../assets/camera.png';
+import FIND_ICON from '../../assets/find.png';
+import PILL_ICON from '../../assets/redpill.png';
+import CHECK_PILL_ICON from '../../assets/greenpill.png';
 
 const { width } = Dimensions.get('window');
 
