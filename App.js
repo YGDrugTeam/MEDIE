@@ -66,6 +66,8 @@ const STORAGE_KEY = 'MY_PILLS_JSON';
 const ONBOARDING_KEY = 'HAS_SEEN_MEDICATION_ONBOARDING';
  
 export default function App() {
+    const insets = useSafeAreaInsets();
+
   const [isStarted, setIsStarted] = useState(false);
   const [appMode, setAppMode] = useState('LOGIN');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -121,6 +123,41 @@ export default function App() {
         '취침전': '21:00',
       };
  
+
+      const syncCreateSchedulesToServer = useCallback(
+    async (pill, schedules) => {
+      if (!user?.id) return schedules;
+
+      const syncedSchedules = [...schedules];
+
+      for (let i = 0; i < syncedSchedules.length; i += 1) {
+        const schedule = syncedSchedules[i];
+        try {
+          const result = await createPillSchedule({
+            userId: user.id,
+            pillId: pill.id,
+            pillName: pill.name,
+            scheduleIndex: i,
+            label: schedule.label || '',
+            time: schedule.time,
+            enabled: schedule.enabled ?? true,
+          });
+
+          syncedSchedules[i] = {
+            ...schedule,
+            serverScheduleId: result?.item?.id || null,
+          };
+        } catch (error) {
+          console.error('❌ 서버 스케줄 생성 실패:', error);
+        }
+      }
+
+      return syncedSchedules;
+    },
+    [user]
+  );
+
+
       // ✅ AI 예측 스케줄 → 알람 시간 자동 설정
       const initialSchedules = aiSchedule.map(label => ({
         label,
