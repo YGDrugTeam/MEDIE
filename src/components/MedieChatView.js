@@ -68,7 +68,7 @@ export const MedieChatView = ({
 
     const panRef = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
 
-    // ✅ 드래그 vs 탭 구분 (5px 이상 움직이면 드래그)
+    // 드래그 vs 탭 구분 (5px 이상 움직이면 드래그)
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
@@ -101,8 +101,47 @@ export const MedieChatView = ({
     ).current;
 
     useEffect(() => {
-        isThinkingRef.current = isThinking;
-    }, [isThinking]);
+        const pollIoT = async () => {
+            // 말하는 중이거나 생각 중이면 스킵
+            if (isThinkingRef.current || isSpeakingRef.current) return;
+            // 팝업 이미 떠있으면 스킵
+            if (showConfirmButtons) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: "",
+                        current_mode: appMode,
+                        pill_history: pillHistory,
+                        chat_history: [],
+                        last_confirmed_timestamp: lastConfirmedTimestamp,
+                    }),
+                });
+
+                const data = await response.json();
+
+                // IoT 감지 팝업
+                if (data.show_confirmation && data.command === 'SHOW_CONFIRMATION') {
+                    console.log("🔔 IoT 무게 감지! 팝업 표시");
+                    setShowConfirmButtons(true);
+                }
+
+                // last_confirmed_timestamp 업데이트
+                if (data.last_confirmed_timestamp) {
+                    setLastConfirmedTimestamp(data.last_confirmed_timestamp);
+                }
+
+            } catch (e) {
+            }
+        };
+
+        // 30초마다 IoT 체크
+        const interval = setInterval(pollIoT, 60000);
+
+        return () => clearInterval(interval);
+    }, [appMode, pillHistory, lastConfirmedTimestamp, showConfirmButtons]);
 
     useEffect(() => {
         const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -293,7 +332,7 @@ export const MedieChatView = ({
         }
     });
 
-    // ✅ 숨김 상태에서도 마이크 유지 (호출어 감지용)
+    // 숨김 상태에서도 마이크 유지 (호출어 감지용)
     useSpeechRecognitionEvent('end', () => {
         setIsListening(false);
         if (!isThinkingRef.current && !isSpeakingRef.current) {
