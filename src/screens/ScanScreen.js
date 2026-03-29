@@ -132,10 +132,10 @@ export default function ScanScreen({
 
   // 1. AI 결과 등록 함수
   const handleConfirm = async () => {
-    console.log("📍 AI 등록 시도 중...");
     try {
+      // 서버 등록은 그대로 유지
       const token = await AsyncStorage.getItem('userToken');
-      const response = await fetch('http://20.106.40.121/pills/register', {
+      await fetch('http://20.106.40.121/pills/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -148,19 +148,19 @@ export default function ScanScreen({
         }),
       });
 
-      const result = await response.json();
-      console.log("📍 서버 응답:", result);
+      // ✅ parsedResult 데이터 넘기기
+      await onRegisterPill?.({
+        pillName: parsedResult?.pillName,
+        usage: parsedResult?.usage,
+        warning: parsedResult?.caution,
+        confidence: parsedResult?.confidence,
+        schedule: parsedResult?.schedule,
+      });
 
-      // 서버 응답이 성공(true)이거나 데이터 객체가 오면 성공 처리
-      if (result) {
-        Alert.alert('등록 완료', `${parsedResult?.pillName} 등록을 완료했어요! 멍!`);
-        onRegisterPill?.();
-        onCloseResult();
-        setAppMode('HOME'); // 등록 후 홈으로 이동
-      }
+      onCloseResult();
+      setAppMode('HOME');
     } catch (error) {
-      console.error("❌ handleConfirm 에러:", error);
-      Alert.alert('오류', '등록에 실패했어요. 네트워크를 확인해주세요.');
+      Alert.alert('오류', '등록에 실패했어요.');
     }
   };
 

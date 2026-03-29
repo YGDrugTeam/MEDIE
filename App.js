@@ -89,7 +89,6 @@ export default function App() {
 
       const pillName =
         (typeof aiText === 'object' && aiText?.pillName) ||
-        responseText.split('\n').find((l) => l.includes('알약 이름'))?.replace('💊 알약 이름: ', '') ||
         '알 수 없음';
 
       // ✅ AI가 예측한 스케줄 사용 (없으면 아침 기본값)
@@ -116,9 +115,11 @@ export default function App() {
       const newPill = {
         id: Date.now().toString(),
         name: pillName,
-        usage: typeof aiText === 'object' ? aiText?.usage || '' : '',
-        warning: typeof aiText === 'object' ? aiText?.caution || '' : '',
-        confidence: typeof aiText === 'object' ? aiText?.confidence || '100' : '100',
+        usage: aiText?.usage || '',
+        warning: aiText?.warning || '',
+        confidence: aiText?.confidence
+          ? String(Math.round(Number(aiText.confidence) * 100))
+          : '100',
         schedules: initialSchedules,
         alarmEnabled: true,  // ✅ 자동으로 알람 ON
         notificationId: null,
