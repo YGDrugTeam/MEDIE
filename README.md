@@ -30,7 +30,7 @@
 
 - **개발 기간**: 2026.01 ~ 2026.03
 - **배포 상태**: iOS · Android 빌드 완료 | Android 배포 완료 (App Service → 서버리스 이전 중)
-- **연계 레포**: [MEDI Agent Server →](https://github.com/lifeiscabaret)
+- **연계 레포**: [MEDI Agent Server →](https://github.com/lifeiscabaret/MEDIE-AI-Agent)
 
 ---
 
@@ -259,7 +259,21 @@ medi-app/
 
 | 레포 | 설명 |
 |------|------|
-| [MEDI Agent Server](https://github.com/lifeiscabaret) | LangGraph Agent · FastAPI · RAG 파이프라인 · IoT 연동 |
-| [MEDI App (현재)](https://github.com/lifeiscabaret) | React Native 앱 · 음성 인터페이스 · UI 제어 |
+| [MEDI Agent Server](https://github.com/lifeiscabaret/MEDIE-AI-Agent) | LangGraph Agent · FastAPI · RAG 파이프라인 · IoT 연동 |
+| [MEDI App (현재)](https://github.com/CareFlowTeam/MEDIE) | React Native 앱 · 음성 인터페이스 · UI 제어 |
+
+---
+
+---
+
+## 👥 팀 구성 및 기술 분담 (Team)
+
+| 이름 | 역할 | 담당 |
+|------|------|------|
+| 조태민 | Team Leader | Arduino SW 아키텍처 설계 및 펌웨어 프로그래밍 |
+| 배권혁 | PM / DevOps | Backend API 개발 · 클라우드 인프라 구축 |
+| 김건 | Hardware | Arduino HW 회로 설계 · 물리 프로토타입 제작 |
+| 이지현 | AI / UI | AI Agent 구현 · 서비스 기획 · UI/UX 설계 및 개발 |
+| 김택수 | Data | 데이터 라벨링 · 모델 학습 최적화 |
 
 ---
