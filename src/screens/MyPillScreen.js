@@ -32,30 +32,47 @@ export default function MyPillScreen({
 }) {
 
   const displayPills = useMemo(() => {
-    return (myPills || []).map((pill, index) => {
-      const scheduleTime = pill?.schedules?.[0]?.time ?? '08:00';
+    const mockPills = [
+      {
+        id: 'pill-001',
+        name: '더블자임정',
+        confidence: '94.2',
+        usage: '소화효소 보충제로, 소화불량 및 식후 복부 팽만감 완화에 도움을 줄 수 있습니다.',
+        warning: '과민반응이 있는 경우 복용을 중단하고 전문가 상담이 필요합니다. 소아 복용 시 주의가 필요합니다.',
+        scheduleLabel: '매일',
+        scheduleTime: '08:00',
+        doseInfo: '소화효소제 · 식후 복용',
+        alarmEnabled: true,
+        schedules: [{ time: '08:00', enabled: true }],
+      },
+      {
+        id: 'pill-002',
+        name: '베스티딘정20밀리그램(파모티딘)',
+        confidence: '91.7',
+        usage: '위산 분비를 억제하여 위궤양, 십이지장궤양, 역류성 식도염 치료 및 증상 완화에 도움을 줄 수 있습니다.',
+        warning: '신장 기능 저하 환자는 용량 조절이 필요합니다. 임산부 및 수유부는 복용 전 반드시 전문가 상담이 필요합니다.',
+        scheduleLabel: '매일',
+        scheduleTime: '20:00',
+        doseInfo: '위산억제제 · 20mg',
+        alarmEnabled: true,
+        schedules: [{ time: '20:00', enabled: true }],
+      },
+    ];
 
-      return {
+    if (myPills && myPills.length > 0) {
+      return myPills.map((pill, index) => ({
         ...pill,
         id: pill?.id ?? `pill-${index}`,
         confidence: pill?.confidence ?? '89.8',
-        usage:
-          pill?.usage ||
-          pill?.effect ||
-          '해열 및 통증 완화에 도움을 줄 수 있는 약이야.',
-        warning:
-          pill?.warning ||
-          pill?.caution ||
-          '임산부, 수유부, 특정 질환자라면 복용 전 전문가 상담이 필요해.',
+        usage: pill?.usage || pill?.effect || '해열 및 통증 완화에 도움을 줄 수 있는 약입니다.',
+        warning: pill?.warning || pill?.caution || '임산부, 수유부, 특정 질환자라면 복용 전 전문가 상담이 필요합니다.',
         scheduleLabel: pill?.scheduleLabel || '매일',
-        scheduleTime,
-        doseInfo:
-          pill?.doseInfo ||
-          pill?.dosage ||
-          pill?.strength ||
-          '해열제 · 500mg',
-      };
-    });
+        scheduleTime: pill?.schedules?.[0]?.time ?? '08:00',
+        doseInfo: pill?.doseInfo || pill?.dosage || pill?.strength || '해열제 · 500mg',
+      }));
+    }
+
+    return mockPills;
   }, [myPills]);
 
   const handleDelete = (pillId) => {
@@ -189,9 +206,9 @@ export default function MyPillScreen({
 
         {displayPills.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>등록된 알약이 아직 없어</Text>
+            <Text style={styles.emptyTitle}>등록된 알약이 아직 없습니다.</Text>
             <Text style={styles.emptyDesc}>
-              약을 스캔하고 복용약으로 등록하면 여기서 확인할 수 있어.
+              약을 스캔하고 복용약으로 등록하면 여기서 확인할 수 있습니다.
             </Text>
 
             <TouchableOpacity

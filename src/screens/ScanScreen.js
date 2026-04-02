@@ -17,7 +17,6 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, Camera } from 'expo-camera';
@@ -90,10 +89,7 @@ export default function ScanScreen({
   const rotate = spinAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
-  }); 
-
-  console.log('### ScanScreen loaded v2 ###');
-  
+  });
 
   const parsedResult = useMemo(() => {
     if (!aiResponse) return null;
@@ -136,134 +132,123 @@ export default function ScanScreen({
 
   // 1. AI 결과 등록 함수
   const handleConfirm = async () => {
-  try {
-    console.log('=== handleConfirm start ===');
-    console.log('### HANDLE_CONFIRM v2 ###'); 
-
-    const token = await SecureStore.getItemAsync('accessToken');
-    console.log('register token =', token);
-console.log('register token jwt shape =', typeof token === 'string' && token.split('.').length === 3);
-
-    if (!token) {
-      Alert.alert('인증 오류', '로그인 토큰이 없습니다. 다시 로그인해주세요.');
-      return;
-    }
-
-    const response = await fetch('http://20.106.40.121/pills/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        name: parsedResult?.pillName,
-        schedule: parsedResult?.schedule || ['아침'],
-        source: 'ai',
-      }),
-    });
-
-    const rawText = await response.text();
-    console.log('status:', response.status);
-    console.log('rawText:', rawText);
-
-    let result = {};
     try {
-      result = rawText ? JSON.parse(rawText) : {};
-    } catch (e) {
-      console.error('JSON parse 실패:', e);
+      const token = await SecureStore.getItemAsync('accessToken');
+
+      if (!token) {
+        Alert.alert('인증 오류', '로그인 토큰이 없습니다. 다시 로그인해주세요.');
+        return;
+      }
+
+      const response = await fetch('http://20.106.40.121/pills/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: parsedResult?.pillName,
+          schedule: parsedResult?.schedule || ['아침'],
+          source: 'ai',
+        }),
+      });
+
+      const rawText = await response.text();
+      console.log('status:', response.status);
+      console.log('rawText:', rawText);
+
+      let result = {};
+      try {
+        result = rawText ? JSON.parse(rawText) : {};
+      } catch (e) {
+        console.error('JSON parse 실패:', e);
+      }
+
+      if (!response.ok || !result.success) {
+        Alert.alert('등록 실패', result?.message || result?.detail || `HTTP ${response.status}`);
+        return;
+      }
+
+      Alert.alert('등록 완료', `${parsedResult?.pillName} 등록을 완료했어요! 멍!`);
+
+      try {
+        await onRegisterPill?.(parsedResult);
+      } catch (e) {
+        console.error('onRegisterPill 에러:', e);
+      }
+
+      onCloseResult?.();
+      setAppMode?.('HOME');
+    } catch (error) {
+      console.error('❌ handleConfirm fetch 에러:', error);
+      Alert.alert('네트워크 오류', error?.message || '서버 요청에 실패했습니다.');
     }
-
-    if (!response.ok || !result.success) {
-      Alert.alert('등록 실패', result?.message || result?.detail || `HTTP ${response.status}`);
-      return;
-    }
-
-    Alert.alert('등록 완료', `${parsedResult?.pillName} 등록을 완료했어요! 멍!`);
-
-    try {
-      await onRegisterPill?.(parsedResult);
-    } catch (e) {
-      console.error('onRegisterPill 에러:', e);
-    }
-
-    onCloseResult?.();
-    setAppMode?.('HOME');
-  } catch (error) {
-    console.error('❌ handleConfirm fetch 에러:', error);
-    Alert.alert('네트워크 오류', error?.message || '서버 요청에 실패했습니다.');
-  }
-};
-  
-
+  };
 
   // 2. 수동 등록 함수
   const handleManualSubmit = async () => {
-  if (!manualName.trim()) {
-    Alert.alert('입력 확인', '약 이름을 입력해주세요.');
-    return;
-  }
-
-  try {
-    console.log('=== handleManualSubmit start ===');
-
-    const token = await SecureStore.getItemAsync('accessToken');
-    console.log('register token =', token);
-console.log('register token jwt shape =', typeof token === 'string' && token.split('.').length === 3);
-
-    if (!token) {
-      Alert.alert('인증 오류', '로그인 토큰이 없습니다. 다시 로그인해주세요.');
+    if (!manualName.trim()) {
+      Alert.alert('입력 확인', '약 이름을 입력해주세요.');
       return;
     }
 
-    const response = await fetch('http://20.106.40.121/pills/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        name: manualName,
-        schedule: parsedResult?.schedule || ['아침'],
-        source: 'manual',
-      }),
-    });
-
-    const rawText = await response.text();
-    console.log('manual status:', response.status);
-    console.log('manual rawText:', rawText);
-
-    let result = {};
     try {
-      result = rawText ? JSON.parse(rawText) : {};
-    } catch (e) {
-      console.error('manual JSON parse 실패:', e);
-    }
+      const token = await SecureStore.getItemAsync('accessToken');
 
-    if (!response.ok || !result.success) {
-      Alert.alert('등록 실패', result?.message || result?.detail || `HTTP ${response.status}`);
-      return;
-    }
+      if (!token) {
+        Alert.alert('인증 오류', '로그인 토큰이 없습니다. 다시 로그인해주세요.');
+        return;
+      }
 
-    Alert.alert('등록 완료', `${manualName} 등록을 완료했어요! 멍멍!`);
-
-    try {
-      await onRegisterPill?.({
-        pillName: manualName,
-        schedule: parsedResult?.schedule || ['아침'],
+      const response = await fetch('http://20.106.40.121/pills/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: manualName,
+          schedule: parsedResult?.schedule || ['아침'],
+          source: 'manual',
+        }),
       });
-    } catch (e) {
-      console.error('manual onRegisterPill 에러:', e);
-    }
 
-    setManualName('');
-    setShowManualInput(false);
-    onCloseResult?.();
-    setAppMode?.('HOME');
-  } catch (error) {
-    console.error('❌ handleManualSubmit fetch 에러:', error);
-    Alert.alert('네트워크 오류', error?.message || '서버 요청에 실패했습니다.');
-  }
-};
+      const rawText = await response.text();
+      console.log('manual status:', response.status);
+      console.log('manual rawText:', rawText);
+
+      let result = {};
+      try {
+        result = rawText ? JSON.parse(rawText) : {};
+      } catch (e) {
+        console.error('manual JSON parse 실패:', e);
+      }
+
+      if (!response.ok || !result.success) {
+        Alert.alert('등록 실패', result?.message || result?.detail || `HTTP ${response.status}`);
+        return;
+      }
+
+      Alert.alert('등록 완료', `${manualName} 등록을 완료했어요! 멍멍!`);
+
+      try {
+        await onRegisterPill?.({
+          pillName: manualName,
+          schedule: parsedResult?.schedule || ['아침'],
+        });
+      } catch (e) {
+        console.error('manual onRegisterPill 에러:', e);
+      }
+
+      setManualName('');
+      setShowManualInput(false);
+      onCloseResult?.();
+      setAppMode?.('HOME');
+    } catch (error) {
+      console.error('❌ handleManualSubmit fetch 에러:', error);
+      Alert.alert('네트워크 오류', error?.message || '서버 요청에 실패했습니다.');
+    }
+  };
 
   if (hasPermission === null) {
     return (
@@ -289,18 +274,25 @@ console.log('register token jwt shape =', typeof token === 'string' && token.spl
       <CameraView style={styles.camera} facing="back" ref={cameraRef} />
       <View style={styles.dimLayer} />
       <View style={styles.header}>
-        <TouchableOpacity activeOpacity={0.85} onPress={() => setAppMode('HOME')} style={styles.backButton}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setAppMode('HOME')}
+          style={styles.backButton}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        >
           <Ionicons name="chevron-back" size={30} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>약 스캔</Text>
         <View style={{ width: 40 }} />
       </View>
+
       <View style={styles.maskOverlay}>
         <View style={styles.scanFrame}>
           <Text style={styles.scanGuideTitle}>SCAN YOUR PILL</Text>
           <Text style={styles.scanGuideHint}>알약을 가이드 안에 맞춰주세요</Text>
         </View>
       </View>
+
       <View style={styles.bottomOverlay}>
         <Text style={styles.bottomCaption}>선명하게 보이도록 약을 중앙에 맞춰주세요</Text>
         <TouchableOpacity
@@ -326,22 +318,42 @@ console.log('register token jwt shape =', typeof token === 'string' && token.spl
       {isAnalyzing && (
         <View style={styles.loadingOverlay}>
           <Animated.View style={[styles.loadingLogoWrap, { transform: [{ rotate }] }]}>
-            <Image source={require('../../assets/MASCOT_IMG.png')} style={styles.loadingLogo} resizeMode="contain" />
+            <Image
+              source={require('../../assets/MASCOT_IMG.png')}
+              style={styles.loadingLogo}
+              resizeMode="contain"
+            />
           </Animated.View>
           <Text style={styles.loadingTitle}>알약을 분석하고 있어요</Text>
           <Text style={styles.loadingDesc}>잠시만 기다려주세요. 복용 시간까지 함께 추정 중이에요.</Text>
         </View>
       )}
 
-      <Modal visible={showResult} animationType="slide" transparent onRequestClose={onCloseResult} statusBarTranslucent>
+      <Modal
+        visible={showResult}
+        animationType="slide"
+        transparent
+        onRequestClose={onCloseResult}
+        statusBarTranslucent
+      >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.modalContainer}>
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ width: '100%' }}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              style={{ width: '100%' }}
+            >
               <View style={styles.modalSheet}>
                 <View style={styles.modalHandle} />
                 <Text style={styles.modalTitle}>AI 스캔 결과</Text>
-                <ScrollView style={styles.modalBodyScroll} contentContainerStyle={styles.modalBodyContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-                  {drugImageUrl && <Image source={{ uri: drugImageUrl }} style={styles.resultImage} />}
+                <ScrollView
+                  style={styles.modalBodyScroll}
+                  contentContainerStyle={styles.modalBodyContent}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                >
+                  {drugImageUrl && (
+                    <Image source={{ uri: drugImageUrl }} style={styles.resultImage} />
+                  )}
                   <View style={styles.resultCard}>
                     <View style={styles.resultRow}>
                       <Text style={styles.resultLabel}>약 종류</Text>
@@ -381,7 +393,10 @@ console.log('register token jwt shape =', typeof token === 'string' && token.spl
                       <TouchableOpacity style={styles.confirmPrimaryBtn} onPress={handleConfirm}>
                         <Text style={styles.confirmPrimaryBtnText}>네, 맞아요</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.confirmSecondaryBtn} onPress={() => setShowManualInput(true)}>
+                      <TouchableOpacity
+                        style={styles.confirmSecondaryBtn}
+                        onPress={() => setShowManualInput(true)}
+                      >
                         <Text style={styles.confirmSecondaryBtnText}>아니요</Text>
                       </TouchableOpacity>
                     </View>
@@ -390,7 +405,14 @@ console.log('register token jwt shape =', typeof token === 'string' && token.spl
                       <TouchableOpacity style={styles.confirmPrimaryBtn} onPress={handleManualSubmit}>
                         <Text style={styles.confirmPrimaryBtnText}>등록하기</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.confirmSecondaryBtn} onPress={() => { setShowManualInput(false); setManualName(''); Keyboard.dismiss(); }}>
+                      <TouchableOpacity
+                        style={styles.confirmSecondaryBtn}
+                        onPress={() => {
+                          setShowManualInput(false);
+                          setManualName('');
+                          Keyboard.dismiss();
+                        }}
+                      >
                         <Text style={styles.confirmSecondaryBtnText}>취소</Text>
                       </TouchableOpacity>
                     </View>
@@ -413,18 +435,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
-
   camera: {
     flex: 1,
   },
-
   dimLayer: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.18)',
   },
-
   header: {
     position: 'absolute',
+    zIndex: 999,
+    elevation: 999,
     top: 54,
     left: 20,
     right: 20,
@@ -432,26 +453,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-
   backButton: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
   },
-
   headerTitle: {
     color: '#fff',
     fontSize: 22,
     fontWeight: '800',
   },
-
   maskOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   scanFrame: {
     width: 250,
     height: 250,
@@ -462,19 +480,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   scanGuideTitle: {
     color: '#fff',
     fontSize: 20,
     fontWeight: '800',
     marginBottom: 8,
   },
-
   scanGuideHint: {
     color: 'rgba(255,255,255,0.9)',
     fontSize: 14,
   },
-
   bottomOverlay: {
     position: 'absolute',
     left: 24,
@@ -482,13 +497,11 @@ const styles = StyleSheet.create({
     bottom: 44,
     alignItems: 'center',
   },
-
   bottomCaption: {
     color: '#fff',
     fontSize: 13,
     marginBottom: 14,
   },
-
   scanButton: {
     width: '100%',
     height: 58,
@@ -498,17 +511,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
   },
-
   scanButtonDisabled: {
     opacity: 0.7,
   },
-
   scanButtonText: {
     color: '#fff',
     fontWeight: '800',
     fontSize: 16,
   },
-
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(8, 16, 8, 0.78)',
@@ -516,7 +526,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 28,
   },
-
   loadingLogoWrap: {
     width: 92,
     height: 92,
@@ -524,37 +533,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   loadingLogo: {
     width: 90,
     height: 90,
   },
-
   loadingTitle: {
     color: '#fff',
     fontSize: 22,
     fontWeight: '800',
     marginBottom: 10,
   },
-
   loadingDesc: {
     color: 'rgba(255,255,255,0.85)',
     fontSize: 14,
     lineHeight: 22,
     textAlign: 'center',
   },
-
   modalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.32)',
     justifyContent: 'flex-end',
   },
-
-  modalKeyboardWrap: {
-    width: '100%',
-    justifyContent: 'flex-end',
-  },
-
   modalSheet: {
     backgroundColor: COLORS.modalBg,
     borderTopLeftRadius: 32,
@@ -569,7 +568,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -6 },
     elevation: 12,
   },
-
   modalTitle: {
     fontSize: 28,
     fontWeight: '900',
@@ -577,23 +575,19 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     letterSpacing: -0.4,
   },
-
   modalBodyScroll: {
     flex: 1,
   },
-
   modalBodyContent: {
     paddingBottom: 120,
     flexGrow: 1,
   },
-
   resultImage: {
     width: '100%',
     height: 160,
     borderRadius: 20,
     marginBottom: 14,
   },
-
   resultCard: {
     backgroundColor: '#fff',
     borderWidth: 1,
@@ -603,26 +597,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     marginBottom: 16,
   },
-
   resultRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-
   resultLabel: {
     fontSize: 15,
     color: '#7B857B',
     fontWeight: '700',
   },
-
   resultValue: {
     fontSize: 15,
     color: COLORS.primary,
     fontWeight: '900',
   },
-
   sectionBlock: {
     backgroundColor: '#F8FBF6',
     borderRadius: 18,
@@ -632,20 +622,17 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     marginBottom: 14,
   },
-
   sectionTitle: {
     fontSize: 16,
     fontWeight: '900',
     color: COLORS.text,
     marginBottom: 10,
   },
-
   sectionText: {
     fontSize: 15,
     lineHeight: 24,
     color: COLORS.text,
   },
-
   helperBox: {
     backgroundColor: '#F8FBF6',
     borderRadius: 16,
@@ -655,25 +642,21 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     marginBottom: 12,
   },
-
   helperText: {
     fontSize: 14,
     lineHeight: 22,
     color: COLORS.subText,
   },
-
   manualWrap: {
     marginTop: 4,
     marginBottom: 8,
   },
-
   manualTitle: {
     fontSize: 16,
     fontWeight: '900',
     color: COLORS.text,
     marginBottom: 10,
   },
-
   manualInput: {
     height: 56,
     borderRadius: 18,
@@ -685,7 +668,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 15,
   },
-
   modalFooter: {
     paddingTop: 14,
     paddingBottom: 10,
@@ -693,12 +675,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#EDF3EA',
   },
-
   confirmRow: {
     flexDirection: 'row',
     gap: 12,
   },
-
   confirmPrimaryBtn: {
     flex: 1,
     height: 58,
@@ -707,13 +687,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   confirmPrimaryBtnText: {
     color: '#fff',
     fontSize: 17,
     fontWeight: '900',
   },
-
   confirmSecondaryBtn: {
     flex: 1,
     height: 58,
@@ -724,25 +702,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   confirmSecondaryBtnText: {
     color: COLORS.primary,
     fontSize: 17,
     fontWeight: '800',
   },
-
   closeTextBtn: {
     marginTop: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   closeText: {
     fontSize: 15,
     color: COLORS.subText,
     fontWeight: '700',
   },
-
   permissionWrap: {
     flex: 1,
     backgroundColor: '#111',
@@ -750,20 +724,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
-
   permissionText: {
     color: '#fff',
     marginBottom: 14,
     textAlign: 'center',
   },
-
   permissionBtn: {
     backgroundColor: COLORS.primary,
     borderRadius: 14,
     paddingHorizontal: 18,
     paddingVertical: 12,
   },
-
   permissionBtnText: {
     color: '#fff',
     fontWeight: '700',

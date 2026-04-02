@@ -48,6 +48,7 @@ export default function SearchPillScreen({ setAppMode, initialKeyword, onSearch 
     canSearch,
     isSearching,
     selected,
+    hasSearchedOnce,  // ✅ 추가
     search,
   } = usePillSearch({ apiBaseUrl });
 
@@ -57,7 +58,7 @@ export default function SearchPillScreen({ setAppMode, initialKeyword, onSearch 
   const finalSelected = DEV_MOCK_PILL_SEARCH ? mockSelected : selected;
   const finalIsSearching = DEV_MOCK_PILL_SEARCH ? mockSearching : isSearching;
 
-  const hasSearched = !!finalSelected;
+  const hasSearched = DEV_MOCK_PILL_SEARCH ? !!mockSelected : hasSearchedOnce;
 
   const handleSearch = (searchQuery) => {
     const q = (searchQuery || query || '').toString();  // ← toString() 추가
@@ -243,6 +244,17 @@ export default function SearchPillScreen({ setAppMode, initialKeyword, onSearch 
 
                     <Text style={styles.resultAlarm}>
                       ⏰ 핸드폰 알람 설정하기 →
+                    </Text>
+                  </View>
+                ) : null}
+
+                {!finalIsSearching && hasSearchedOnce && !finalSelected ? (
+                  <View style={{ alignItems: 'center', marginTop: 30 }}>
+                    <Text style={{ fontSize: 16, color: '#888' }}>
+                      '{query}' 검색 결과가 없어요.
+                    </Text>
+                    <Text style={{ fontSize: 14, color: '#aaa', marginTop: 8 }}>
+                      다른 약 이름으로 검색해보세요.
                     </Text>
                   </View>
                 ) : null}

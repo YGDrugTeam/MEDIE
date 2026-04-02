@@ -368,11 +368,7 @@ export default function App() {
                   }
                 }
 
-                return {
-                  ...schedule,
-                  enabled: true,
-                  notificationIds: newIds,
-                };
+                return { ...schedule, enabled: true, notificationIds: newIds };
               }
 
               await cancelMedicationAlarmTriple(schedule.notificationIds || []);
@@ -387,19 +383,11 @@ export default function App() {
                 }
               }
 
-              return {
-                ...schedule,
-                enabled: false,
-                notificationIds: [],
-              };
+              return { ...schedule, enabled: false, notificationIds: [] };
             })
           );
 
-          return {
-            ...pill,
-            alarmEnabled: nextEnabled,
-            schedules: nextSchedules,
-          };
+          return { ...pill, alarmEnabled: nextEnabled, schedules: nextSchedules };
         })
       );
 
@@ -448,10 +436,7 @@ export default function App() {
             })
           );
 
-          return {
-            ...pill,
-            schedules: nextSchedules,
-          };
+          return { ...pill, schedules: nextSchedules };
         })
       );
 
@@ -806,76 +791,38 @@ export default function App() {
         >
           <TouchableOpacity onPress={() => setAppMode('HOME')} style={appStyles.tabItem}>
             <Ionicons name="home" size={26} color={appMode === 'HOME' ? '#065809' : '#67A369'} />
-            <Text
-              style={[
-                appStyles.tabText,
-                { color: appMode === 'HOME' ? '#065809' : '#67A369' },
-              ]}
-            >
+            <Text style={[appStyles.tabText, { color: appMode === 'HOME' ? '#065809' : '#67A369' }]}>
               홈
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => setAppMode('MAP')} style={appStyles.tabItem}>
-            <Ionicons
-              name="location"
-              size={26}
-              color={appMode === 'MAP' ? '#065809' : '#67A369'}
-            />
-            <Text
-              style={[
-                appStyles.tabText,
-                { color: appMode === 'MAP' ? '#065809' : '#67A369' },
-              ]}
-            >
+          <TouchableOpacity
+            onPress={() => { setAppMode('MAP'); findNearbyPharmacies(); }}
+            style={appStyles.tabItem}
+          >
+            <Ionicons name="location" size={26} color={appMode === 'MAP' ? '#065809' : '#67A369'} />
+            <Text style={[appStyles.tabText, { color: appMode === 'MAP' ? '#065809' : '#67A369' }]}>
               약국
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => setAppMode('SEARCH_PILL')} style={appStyles.tabItem}>
-            <Ionicons
-              name="search"
-              size={26}
-              color={appMode === 'SEARCH_PILL' ? '#065809' : '#67A369'}
-            />
-            <Text
-              style={[
-                appStyles.tabText,
-                { color: appMode === 'SEARCH_PILL' ? '#065809' : '#67A369' },
-              ]}
-            >
+            <Ionicons name="search" size={26} color={appMode === 'SEARCH_PILL' ? '#065809' : '#67A369'} />
+            <Text style={[appStyles.tabText, { color: appMode === 'SEARCH_PILL' ? '#065809' : '#67A369' }]}>
               검색
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => setAppMode('COMMUNITY')} style={appStyles.tabItem}>
-            <Ionicons
-              name="chatbubble-ellipses"
-              size={26}
-              color={appMode === 'COMMUNITY' ? '#065809' : '#67A369'}
-            />
-            <Text
-              style={[
-                appStyles.tabText,
-                { color: appMode === 'COMMUNITY' ? '#065809' : '#67A369' },
-              ]}
-            >
+            <Ionicons name="chatbubble-ellipses" size={26} color={appMode === 'COMMUNITY' ? '#065809' : '#67A369'} />
+            <Text style={[appStyles.tabText, { color: appMode === 'COMMUNITY' ? '#065809' : '#67A369' }]}>
               커뮤니티
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => setAppMode('MY_PAGE')} style={appStyles.tabItem}>
-            <Ionicons
-              name="person"
-              size={26}
-              color={appMode === 'MY_PAGE' ? '#065809' : '#67A369'}
-            />
-            <Text
-              style={[
-                appStyles.tabText,
-                { color: appMode === 'MY_PAGE' ? '#065809' : '#67A369' },
-              ]}
-            >
+            <Ionicons name="person" size={26} color={appMode === 'MY_PAGE' ? '#065809' : '#67A369'} />
+            <Text style={[appStyles.tabText, { color: appMode === 'MY_PAGE' ? '#065809' : '#67A369' }]}>
               마이페이지
             </Text>
           </TouchableOpacity>
@@ -886,8 +833,8 @@ export default function App() {
         appMode={appMode}
         setAppMode={setAppMode}
         onCompleteNextDose={completeNextDose}
-        onChangeAlarmTime={changePillAlarmTime}
-        onToggleAlarm={togglePillAlarm}
+        onChangeAlarmTime={changePillAlarmTimeAndReschedule}
+        onToggleAlarm={togglePillAlarmAndReschedule}
         onToggleAllAlarms={toggleAllAlarms}
         onDeleteAllAlarms={deleteAllAlarms}
         onSearchDrug={(keyword) => setSearchKeyword(keyword)}

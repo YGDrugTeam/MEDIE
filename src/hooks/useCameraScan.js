@@ -68,12 +68,17 @@ export default function useCameraScan({ onRegisterPill } = {}) {
       const usage = analysis.usage;
       const warning = analysis.warning;
 
-      setAiResponse(
-        `💊 알약 이름: ${pillName}\n` +
+      setAiResponse({
+        pillName: pillName,
+        usage: usage,
+        warning: warning,
+        confidence: confidence,
+        rawText:
+          `💊 알약 이름: ${pillName}\n` +
           `신뢰도: ${(confidence * 100).toFixed(1)}%\n\n` +
           `📌 복용 목적\n${usage}\n\n` +
           `⚠️ 주의사항\n${warning}`
-      );
+      });
 
       setShowResult(true);
       Speech.speak('알약 분석이 완료되었습니다', { language: 'ko-KR', rate: 0.9 });
